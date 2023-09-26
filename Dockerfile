@@ -11,6 +11,7 @@ RUN groupadd ${USER_NAME} --gid ${USER_GID}\
 RUN apt-get update && apt-get install --no-install-recommends -y \
     lsb-release \
     sudo \
+    gcc \
     tzdata \
     bash-completion
 
