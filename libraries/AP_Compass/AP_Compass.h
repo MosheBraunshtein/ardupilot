@@ -35,9 +35,6 @@
 #endif
 #endif
 
-#ifndef COMPASS_CAL_ENABLED
-#define COMPASS_CAL_ENABLED 1
-#endif
 #ifndef COMPASS_MOT_ENABLED
 #define COMPASS_MOT_ENABLED 1
 #endif
@@ -196,7 +193,7 @@ public:
     /*
       handle an incoming MAG_CAL command
     */
-    MAV_RESULT handle_mag_cal_command(const mavlink_command_long_t &packet);
+    MAV_RESULT handle_mag_cal_command(const mavlink_command_int_t &packet);
 
     bool send_mag_cal_progress(const class GCS_MAVLINK& link);
     bool send_mag_cal_report(const class GCS_MAVLINK& link);

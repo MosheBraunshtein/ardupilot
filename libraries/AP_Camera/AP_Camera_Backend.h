@@ -60,6 +60,9 @@ public:
     // total_num is number of pictures to be taken, -1 means capture forever
     void take_multiple_pictures(uint32_t time_interval_ms, int16_t total_num);
 
+    // stop capturing multiple image sequence
+    void stop_capture();
+
     // entry point to actually take a picture.  returns true on success
     virtual bool trigger_pic() = 0;
 
@@ -143,6 +146,12 @@ protected:
     void Write_Camera(uint64_t timestamp_us=0);
     void Write_Trigger();
     void Write_CameraInfo(enum LogMessages msg, uint64_t timestamp_us=0);
+
+    // get corresponding mount instance for the camera
+    uint8_t get_mount_instance() const;
+
+    // get mavlink gimbal device id which is normally mount_instance+1
+    uint8_t get_gimbal_device_id() const;
 
     // internal members
     uint8_t _instance;      // this instance's number

@@ -23,13 +23,11 @@
 #include "fcntl.h"
 
 #include <AP_Param/AP_Param.h>
+#include "AP_DDS_config.h"
 
 #define DDS_MTU             512
 #define DDS_STREAM_HISTORY  8
 #define DDS_BUFFER_SIZE     DDS_MTU * DDS_STREAM_HISTORY
-
-// UDP only on SITL for now
-#define AP_DDS_UDP_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
 
 #if AP_DDS_UDP_ENABLED
 #include <AP_HAL/utility/Socket.h>
@@ -58,12 +56,14 @@ private:
     builtin_interfaces_msg_Time time_topic;
     geographic_msgs_msg_GeoPoseStamped geo_pose_topic;
     geometry_msgs_msg_PoseStamped local_pose_topic;
-    geometry_msgs_msg_TwistStamped local_velocity_topic;
+    geometry_msgs_msg_TwistStamped tx_local_velocity_topic;
     sensor_msgs_msg_BatteryState battery_state_topic;
     sensor_msgs_msg_NavSatFix nav_sat_fix_topic;
     rosgraph_msgs_msg_Clock clock_topic;
     // incoming joystick data
     static sensor_msgs_msg_Joy rx_joy_topic;
+    // incoming REP147 velocity control
+    static geometry_msgs_msg_TwistStamped rx_velocity_control_topic;
     // outgoing transforms
     tf2_msgs_msg_TFMessage tx_static_transforms_topic;
     tf2_msgs_msg_TFMessage tx_dynamic_transforms_topic;
@@ -85,10 +85,12 @@ private:
     static void update_topic(rosgraph_msgs_msg_Clock& msg);
 
     // subscription callback function
-    static void on_topic(uxrSession* session, uxrObjectId object_id, uint16_t request_id, uxrStreamId stream_id, struct ucdrBuffer* ub, uint16_t length, void* args);
+    static void on_topic_trampoline(uxrSession* session, uxrObjectId object_id, uint16_t request_id, uxrStreamId stream_id, struct ucdrBuffer* ub, uint16_t length, void* args);
+    void on_topic(uxrSession* session, uxrObjectId object_id, uint16_t request_id, uxrStreamId stream_id, struct ucdrBuffer* ub, uint16_t length);
 
-    // count of subscribed samples
-    uint32_t count;
+    // service replier callback function
+    static void on_request_trampoline(uxrSession* session, uxrObjectId object_id, uint16_t request_id, SampleIdentity* sample_id, ucdrBuffer* ub, uint16_t length, void* args);
+    void on_request(uxrSession* session, uxrObjectId object_id, uint16_t request_id, SampleIdentity* sample_id, ucdrBuffer* ub, uint16_t length);
 
     // delivery control parameters
     uxrDeliveryControl delivery_control {
@@ -169,7 +171,7 @@ public:
     //! @brief Serialize the current local_pose and publish to the IO stream(s)
     void write_local_pose_topic();
     //! @brief Serialize the current local velocity and publish to the IO stream(s)
-    void write_local_velocity_topic();
+    void write_tx_local_velocity_topic();
     //! @brief Serialize the current geo_pose and publish to the IO stream(s)
     void write_geo_pose_topic();
     //! @brief Serialize the current clock and publish to the IO stream(s)
@@ -193,7 +195,21 @@ public:
     };
     static const struct Topic_table topics[];
 
+    //! @brief Convenience grouping for a single "channel" of services
+    struct Service_table {
+        //! @brief Request ID for the service
+        const uint8_t req_id;
 
+        //! @brief Reply ID for the service
+        const uint8_t rep_id;
+
+        //! @brief Profile Label for the service requester
+        const char* req_profile_label;
+
+        //! @brief Profile Label for the service replier
+        const char* rep_profile_label;
+    };
+    static const struct Service_table services[];
 };
 
 #endif // AP_DDS_ENABLED

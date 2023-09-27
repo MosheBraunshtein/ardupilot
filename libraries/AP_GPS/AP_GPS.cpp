@@ -12,6 +12,10 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include "AP_GPS_config.h"
+
+#if AP_GPS_ENABLED
+
 #include "AP_GPS.h"
 
 #include <AP_Common/AP_Common.h>
@@ -334,7 +338,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Param: _DRV_OPTIONS
     // @DisplayName: driver options
     // @Description: Additional backend specific options
-    // @Bitmask: 0:Use UART2 for moving baseline on ublox,1:Use base station for GPS yaw on SBF,2:Use baudrate 115200,3:Use dedicated CAN port b/w GPSes for moving baseline,4:Use ellipsoid height instead of AMSL for uBlox driver
+    // @Bitmask: 0:Use UART2 for moving baseline on ublox,1:Use base station for GPS yaw on SBF,2:Use baudrate 115200,3:Use dedicated CAN port b/w GPSes for moving baseline,4:Use ellipsoid height instead of AMSL
     // @User: Advanced
     AP_GROUPINFO("_DRV_OPTIONS", 22, AP_GPS, _driver_options, 0),
 
@@ -728,7 +732,7 @@ AP_GPS_Backend *AP_GPS::_detect_instance(uint8_t instance)
     case GPS_TYPE_UAVCAN:
     case GPS_TYPE_UAVCAN_RTK_BASE:
     case GPS_TYPE_UAVCAN_RTK_ROVER:
-#if HAL_ENABLE_DRONECAN_DRIVERS
+#if AP_GPS_DRONECAN_ENABLED
         dstate->auto_detected_baud = false; // specified, not detected
         return AP_GPS_DroneCAN::probe(*this, state[instance]);
 #endif
@@ -1294,6 +1298,7 @@ void AP_GPS::update_primary(void)
 }
 #endif  // GPS_MAX_RECEIVERS > 1
 
+#if HAL_GCS_ENABLED
 void AP_GPS::handle_gps_inject(const mavlink_message_t &msg)
 {
     mavlink_gps_inject_data_t packet;
@@ -1331,6 +1336,7 @@ void AP_GPS::handle_msg(const mavlink_message_t &msg)
     }
     }
 }
+#endif
 
 #if HAL_MSP_GPS_ENABLED
 void AP_GPS::handle_msp(const MSP::msp_gps_data_message_t &pkt)
@@ -1344,12 +1350,22 @@ void AP_GPS::handle_msp(const MSP::msp_gps_data_message_t &pkt)
 #endif // HAL_MSP_GPS_ENABLED
 
 #if HAL_EXTERNAL_AHRS_ENABLED
-void AP_GPS::handle_external(const AP_ExternalAHRS::gps_data_message_t &pkt)
+
+bool AP_GPS::get_first_external_instance(uint8_t& instance) const
 {
     for (uint8_t i=0; i<num_instances; i++) {
         if (drivers[i] != nullptr && _type[i] == GPS_TYPE_EXTERNAL_AHRS) {
-            drivers[i]->handle_external(pkt);
+            instance = i;
+            return true;
         }
+    }
+    return false;
+}
+
+void AP_GPS::handle_external(const AP_ExternalAHRS::gps_data_message_t &pkt, const uint8_t instance)
+{
+    if (_type[instance] == GPS_TYPE_EXTERNAL_AHRS && drivers[instance] != nullptr) {
+        drivers[instance]->handle_external(pkt);
     }
 }
 #endif // HAL_EXTERNAL_AHRS_ENABLED
@@ -1496,6 +1512,7 @@ void AP_GPS::send_mavlink_gps2_raw(mavlink_channel_t chan)
 }
 #endif // GPS_MAX_RECEIVERS
 
+#if HAL_GCS_ENABLED
 void AP_GPS::send_mavlink_gps_rtk(mavlink_channel_t chan, uint8_t inst)
 {
     if (inst >= GPS_MAX_RECEIVERS) {
@@ -1505,6 +1522,7 @@ void AP_GPS::send_mavlink_gps_rtk(mavlink_channel_t chan, uint8_t inst)
         drivers[inst]->send_mavlink_gps_rtk(chan);
     }
 }
+#endif
 
 bool AP_GPS::first_unconfigured_gps(uint8_t &instance) const
 {
@@ -2109,13 +2127,11 @@ bool AP_GPS::is_healthy(uint8_t instance) const
         return false;
     }
 
-#ifdef HAL_BUILD_AP_PERIPH
+#ifndef HAL_BUILD_AP_PERIPH
     /*
       on AP_Periph handling of timing is done by the flight controller
       receiving the DroneCAN messages
      */
-    return drivers[instance] != nullptr && drivers[instance]->is_healthy();
-#else
     /*
       allow two lost frames before declaring the GPS unhealthy, but
       require the average frame rate to be close to 5Hz. We allow for
@@ -2131,6 +2147,7 @@ bool AP_GPS::is_healthy(uint8_t instance) const
     if (!delay_ok) {
         return false;
     }
+#endif // HAL_BUILD_AP_PERIPH
 
 #if defined(GPS_BLENDED_INSTANCE)
     if (instance == GPS_BLENDED_INSTANCE) {
@@ -2140,7 +2157,6 @@ bool AP_GPS::is_healthy(uint8_t instance) const
 
     return drivers[instance] != nullptr &&
            drivers[instance]->is_healthy();
-#endif // HAL_BUILD_AP_PERIPH
 }
 
 bool AP_GPS::prepare_for_arming(void) {
@@ -2155,7 +2171,7 @@ bool AP_GPS::prepare_for_arming(void) {
 
 bool AP_GPS::backends_healthy(char failure_msg[], uint16_t failure_msg_len) {
     for (uint8_t i = 0; i < GPS_MAX_RECEIVERS; i++) {
-#if HAL_ENABLE_DRONECAN_DRIVERS
+#if AP_GPS_DRONECAN_ENABLED
         if (_type[i] == GPS_TYPE_UAVCAN ||
             _type[i] == GPS_TYPE_UAVCAN_RTK_BASE ||
             _type[i] == GPS_TYPE_UAVCAN_RTK_ROVER) {
@@ -2318,3 +2334,5 @@ AP_GPS &gps()
 }
 
 };
+
+#endif  // AP_GPS_ENABLED

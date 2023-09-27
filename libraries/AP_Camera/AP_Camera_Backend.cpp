@@ -3,6 +3,7 @@
 #if AP_CAMERA_ENABLED
 #include <GCS_MAVLink/GCS.h>
 #include <AP_GPS/AP_GPS.h>
+#include <AP_Mount/AP_Mount.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -93,6 +94,32 @@ void AP_Camera_Backend::update()
     take_picture();
 }
 
+// get corresponding mount instance for the camera
+uint8_t AP_Camera_Backend::get_mount_instance() const
+{
+    // instance 0 means default
+    if (_params.mount_instance.get() == 0) {
+        return _instance;
+    }
+    return _params.mount_instance.get() - 1;
+}
+
+// get mavlink gimbal device id which is normally mount_instance+1
+uint8_t AP_Camera_Backend::get_gimbal_device_id() const
+{
+#if HAL_MOUNT_ENABLED
+    const uint8_t mount_instance = get_mount_instance();
+    AP_Mount* mount = AP::mount();
+    if (mount != nullptr) {
+        if (mount->get_mount_type(mount_instance) != AP_Mount::Type::None) {
+            return (mount_instance + 1);
+        }
+    }
+#endif
+    return 0;
+}
+
+
 // take a picture.  returns true on success
 bool AP_Camera_Backend::take_picture()
 {
@@ -125,6 +152,12 @@ bool AP_Camera_Backend::take_picture()
 void AP_Camera_Backend::take_multiple_pictures(uint32_t time_interval_ms, int16_t total_num)
 {
     time_interval_settings = {time_interval_ms, total_num};
+}
+
+// stop capturing multiple image sequence
+void AP_Camera_Backend::stop_capture()
+{
+    time_interval_settings = {0, 0};
 }
 
 // handle camera control
@@ -196,7 +229,8 @@ void AP_Camera_Backend::send_camera_information(mavlink_channel_t chan) const
         0,                      // lens_id, uint8_t
         cap_flags,              // flags uint32_t (CAMERA_CAP_FLAGS)
         0,                      // cam_definition_version uint16_t
-        cam_definition_uri);    // cam_definition_uri char[140]
+        cam_definition_uri,     // cam_definition_uri char[140]
+        get_gimbal_device_id());// gimbal_device_id uint8_t
 }
 
 // send camera settings message to GCS
@@ -290,7 +324,7 @@ void AP_Camera_Backend::prep_mavlink_msg_camera_feedback(uint64_t timestamp_us)
     camera_feedback.yaw_sensor = ahrs.yaw_sensor;
     camera_feedback.feedback_trigger_logged_count = feedback_trigger_logged_count;
 
-    gcs().send_message(MSG_CAMERA_FEEDBACK);
+    GCS_SEND_MESSAGE(MSG_CAMERA_FEEDBACK);
 }
 
 // log picture

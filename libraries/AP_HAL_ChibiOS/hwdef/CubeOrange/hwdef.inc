@@ -74,10 +74,12 @@ PA14 JTCK-SWCLK SWD
 # PWM output for buzzer
 PA15 TIM2_CH1 TIM2 GPIO(77) ALARM
 
-# This defines a couple of general purpose outputs, mapped to GPIO
-# numbers 1 and 2 for users.
-PB0 EXTERN_GPIO1 OUTPUT GPIO(1)
-PB1 EXTERN_GPIO2 OUTPUT GPIO(2)
+# Map the EXTERN_DRDY and !EXTERN_CS as analog inputs in
+PB0 PB0_ADC ADC1 SCALE(1)
+PB1 PB1_ADC ADC1 SCALE(1)
+# also keep them available as a GPIO alt config
+PB0 EXTERN_GPIO1 OUTPUT GPIO(1) ALT(2)
+PB1 EXTERN_GPIO2 OUTPUT GPIO(2) ALT(2)
 
 # This defines some input pins, currently unused.
 PB2 BOOT1 INPUT
@@ -320,6 +322,10 @@ define HAL_GPIO_PWM_VOLT_3v3 1
 # is "ROMFS ROMFS-filename source-filename". Paths are relative to the
 # ardupilot root.
 ROMFS io_firmware.bin Tools/IO_Firmware/iofirmware_highpolh.bin
+
+# enable support for dshot on iomcu
+ROMFS io_firmware_dshot.bin Tools/IO_Firmware/iofirmware_dshot_highpolh.bin
+define HAL_WITH_IO_MCU_DSHOT 1
 
 DMA_NOSHARE SPI1* SPI4* USART6*
 

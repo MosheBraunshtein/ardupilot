@@ -83,11 +83,18 @@
 #include <AP_Landing/AP_Landing.h>
 #include <AP_LandingGear/AP_LandingGear.h>     // Landing Gear library
 #include <AP_Follow/AP_Follow.h>
+#include <AP_ExternalControl/AP_ExternalControl_config.h>
+#if AP_EXTERNAL_CONTROL_ENABLED
+#include <AP_ExternalControl/AP_ExternalControl.h>
+#endif
 
 #include "GCS_Mavlink.h"
 #include "GCS_Plane.h"
 #include "quadplane.h"
+#include <AP_Tuning/AP_Tuning_config.h>
+#if AP_TUNING_ENABLED
 #include "tuning.h"
+#endif
 
 // Configuration
 #include "config.h"
@@ -217,6 +224,9 @@ private:
     // are we doing calibration? This is used to allow heartbeat to
     // external failsafe boards during baro and airspeed calibration
     bool in_calibration;
+
+    // are we currently in long failsafe but have postponed it in MODE TAKEOFF until min level alt is reached
+    bool long_failsafe_pending;
 
     // GCS selection
     GCS_Plane _gcs; // avoid using this; use gcs()
@@ -767,6 +777,11 @@ private:
 
     AP_Param param_loader {var_info};
 
+    // dummy implementation of external control
+#if AP_EXTERNAL_CONTROL_ENABLED
+    AP_ExternalControl external_control;
+#endif
+
     static const AP_Scheduler::Task scheduler_tasks[];
     static const AP_Param::Info var_info[];
 
@@ -781,8 +796,10 @@ private:
     QuadPlane quadplane{ahrs};
 #endif
 
+#if AP_TUNING_ENABLED
     // support for transmitter tuning
     AP_Tuning_Plane tuning;
+#endif
 
     static const struct LogStructure log_structure[];
 
@@ -928,22 +945,14 @@ private:
     bool verify_command_callback(const AP_Mission::Mission_Command& cmd);
     float get_wp_radius() const;
 
-    void do_nav_delay(const AP_Mission::Mission_Command& cmd);
-    bool verify_nav_delay(const AP_Mission::Mission_Command& cmd);
-
     bool is_land_command(uint16_t cmd) const;
 
+    bool do_change_speed(uint8_t speedtype, float speed_target_ms, float rhtottle_pct);
     /*
       return true if in a specific AUTO mission command
     */
     bool in_auto_mission_id(uint16_t command) const;
-    
-    // Delay the next navigation command
-    struct {
-        uint32_t time_max_ms;
-        uint32_t time_start_ms;
-    } nav_delay;
-    
+
 #if AP_SCRIPTING_ENABLED
     // nav scripting support
     void do_nav_script_time(const AP_Mission::Mission_Command& cmd);

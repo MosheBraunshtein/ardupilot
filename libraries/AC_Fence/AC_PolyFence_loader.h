@@ -39,8 +39,6 @@ public:
 #include <AP_Common/Location.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 
-#define AC_POLYFENCE_FENCE_POINT_PROTOCOL_SUPPORT 1
-
 class AC_PolyFence_loader
 {
 
@@ -174,12 +172,10 @@ public:
     // call @10Hz to check for fence load being valid
     void update();
 
-#if AC_POLYFENCE_FENCE_POINT_PROTOCOL_SUPPORT
     // get_return_point - returns latitude/longitude of return point.
     // This works with storage - the returned vector is absolute
     // lat/lon.
     bool get_return_point(Vector2l &ret) WARN_IF_UNUSED;
-#endif
 
     // return total number of fences - polygons and circles
     uint16_t total_fence_count() const {
@@ -353,18 +349,6 @@ private:
                                    const uint8_t vertex_count,
                                    Vector2f *&next_storage_point,
                                    Vector2l *&next_storage_point_lla) WARN_IF_UNUSED;
-
-    /*
-     * Upgrade functions - attempt to keep user's fences when
-     * upgrading to new firmware
-     */
-    // convert_to_new_storage - will attempt to change a pre-existing
-    // stored fence to the new storage format (so people don't lose
-    // their fences when upgrading)
-    bool convert_to_new_storage() WARN_IF_UNUSED;
-    // load boundary point from eeprom, returns true on successful load
-    bool load_point_from_eeprom(uint16_t i, Vector2l& point) const WARN_IF_UNUSED;
-
 
 #if AC_POLYFENCE_FENCE_POINT_PROTOCOL_SUPPORT
     /*
