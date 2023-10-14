@@ -29,6 +29,8 @@ u = pnet('udpsocket',9002);
 pnet(u,'setwritetimeout',1);
 pnet(u,'setreadtimeout',0);
 
+vec_to_plot = zeros(1,100000);
+
 frame_time = tic;
 frame_count = 0;
 physics_time_s = 0;
@@ -93,7 +95,15 @@ while true
         fprintf('Connected to %i.%i.%i.%i:%i\n',ip,port)
     end
     frame_count = frame_count + 1;
+    
+    if rem(frame_count,50) == 0
+        vec_to_plot(1,frame_count/50) = state.velocity(3);
+    end
 
+    if frame_count == 75000
+        save('data.mat',"vec_to_plot");
+        return;
+    end
     % do a physics time step
     state = physics_function(pwm_in,state);
 
@@ -108,13 +118,15 @@ while true
     % Report to AP  
     pnet(u,'printf',sprintf('\n%s\n',jsonencode(JSON)));
     pnet(u,'writepacket');
-
+    if rem(frame_count,100) == 0
+        fprintf("frame: %d\n",frame_count);
+    end
     % print a fps and runtime update
     if rem(frame_count,print_frame_count) == 0
         total_time = toc(frame_time);
         frame_time = tic;
         time_ratio = (print_frame_count*state.delta_t)/total_time;
-        fprintf("%0.2f fps, %0.2f%% of realtime\n",print_frame_count/total_time,time_ratio*100)
+        % fprintf("%0.2f fps, %0.2f%% of realtime\n",print_frame_count/total_time,time_ratio*100)
     end
 end
 
