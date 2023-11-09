@@ -13,12 +13,14 @@ action_dim = env.action_space.shape[0]
 lower_bound = env.action_space.low
 upper_bound = env.action_space.high
 
-print("########### Drone Gym #########################")
+
+print("############################################")
+print(" Drone Gym")
 print("Observation Dimension:", obs_dim)
 print("Action Dimension:", action_dim)
 print("Lower Bound for Actions:", lower_bound)
 print("Upper Bound for Actions:", upper_bound)
-
+print("############################################")
 
 
 
