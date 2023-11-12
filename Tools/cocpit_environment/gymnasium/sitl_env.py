@@ -13,9 +13,10 @@ from mavsdk.offboard import (Attitude, OffboardError)
 class SitlConnection:
 
     def __init__(self):
-        self.ip = "192.168.225.40"
+        self.ip = "172.18.128.1"
         self.drone = System(mavsdk_server_address=self.ip, port=50051)
         self.DroneReady = False
+        self.sitl_process = None
 
 
     async def run(self):
@@ -31,7 +32,7 @@ class SitlConnection:
             newline = self.sitl_process.stdout.readline()
             print("sitl-process: " + newline)
             if "Flight" in newline:
-                self.sitl_process.stdin.write("mode GUIDED_NOGPS\n")
+                self.sitl_process.stdin.write("mode STABILIZE\n")
                 self.sitl_process.stdin.flush()
                 self.DroneReady = True 
 
@@ -59,7 +60,8 @@ class SitlConnection:
 
 
     def terminate_simulator(self):
-        self.sitl_process.terminate()
+        if self.sitl_process is not None:
+            self.sitl_process.terminate()
         print("sitl process: terminated successfully")
 
     def _change_dir(self):
@@ -72,7 +74,7 @@ class SitlConnection:
         except FileNotFoundError:
             print("Directory not found.")
         except Exception as e:
-            print(f"An error occurred: {e}")
+            print(f"An error occurred with _change_dir(): {e}")
 
     def _start_sitl(self):
         try:
@@ -92,7 +94,7 @@ class SitlConnection:
                 text=True
             )
         except subprocess.CalledProcessError as e:
-            print(f"Command failed with return code: {e.returncode}")
+            print(f"_start_sitl() failed: {e.returncode}")
         else:
             print("sitl process: SITL started successfully")
 
