@@ -27,6 +27,7 @@ class Sitl:
 
 
     def run(self):
+        self.progress("set parameters values: angle_max, sim_")
         try:
             self.sitl = subprocess.Popen(["sim_vehicle.py","-v","ArduCopter","--out",f"{self.mp_ip}:14550","--out",f"{self.container_ip}:14551"],stdout=subprocess.PIPE, stderr=subprocess.PIPE,stdin=subprocess.PIPE, text=True)
         except subprocess.CalledProcessError as e:
@@ -40,7 +41,11 @@ class Sitl:
                 self.progress("call to pymavlink")
                 self.myMav.connect()
                 break
+        self.sitl.stdin.write("mode GUIDED\n")
+        self.sitl.stdin.flush()
         self.myMav.arm_copter()
+        self.myMav.takeoff_to100()
+
 
     def set_rc(self,rc_channels):
         self.myMav.send_rc_command(rc_channel_values=rc_channels)
@@ -51,5 +56,14 @@ class Sitl:
         attitude = self.myMav.get_attitude()
         return gps , attitude
             
+
+    def close(self):
+        self.myMav.close()
+        #TODO use mavproxy to cancel outports for clean close
+        self.sitl.stdin.write(f"output remove {self.mp_ip}:14550 {self.container_ip}:14551 \n")
+        self.sitl.stdin.flush()
+        self.sitl.terminate()
+        self.progress("terminate sitl process")
+
     def progress(self,arg):
         print(f"SITL: {arg}")

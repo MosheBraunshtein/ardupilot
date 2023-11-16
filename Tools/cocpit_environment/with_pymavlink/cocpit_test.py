@@ -40,19 +40,27 @@ def cool_print():
 ╚════════════════════════╝
 * by moshe braunshtein ! *
             """)
+        sleep(2)
 
 
 if __name__ == "__main__":
 
-    env = CopterGym(out_of_bound_penalty=100, max_steps=100)
+    try: 
 
-    pi_net = PI_Network(obs_dim=3,action_dim=4,lower_bound=1000,upper_bound=2000)
+        env = CopterGym(out_of_bound_penalty=100, max_steps=100)
 
-    cool_print()
+        pi_net = PI_Network(obs_dim=3,action_dim=4,lower_bound=1000,upper_bound=2000)
 
-    attitude = env.reset()
+        cool_print()
 
-    test(obs=attitude)
+        attitude = env.reset()
+        print("see heading")
+        sleep(5)
+        test(obs=attitude)
+
+    except KeyboardInterrupt:
+         print("\n shutting down . . .  \n")
+         env.close()
 
 
 

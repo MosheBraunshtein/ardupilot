@@ -1,6 +1,6 @@
 from pymavlink import mavutil
 import time
-
+import math
 
 
 
@@ -26,7 +26,6 @@ class Custom_mav():
         self.progress(f"Heartbeat from system {self.target_system}, component {self.target_component}")
 
     def send_rc_command(self,rc_channel_values):
-        self.progress("send rc")
         rc_channel_values_as_int = [int(x) for x in rc_channel_values]
         self.myMav.mav.rc_channels_override_send(
             self.target_system,
@@ -52,7 +51,6 @@ class Custom_mav():
                 self.isArmed = True
             time.sleep(0.1)
         self.progress("autopilot is armed") 
-        time.sleep(5)
         return self.isArmed
 
     def get_gps(self):
@@ -69,10 +67,12 @@ class Custom_mav():
             )
 
             pos_msg = self.myMav.recv_match(type="GLOBAL_POSITION_INT", blocking=False)
-
             if pos_msg:       
                 alt = (pos_msg.alt / 1000.0) - 584.09
-                self.progress(alt)
+                lat = pos_msg.lat / 10000000
+                long = pos_msg.lon / 10000000
+                heading = pos_msg.hdg / 100
+                self.progress(f"GLOBAL_POSITION_INT : lat={lat}, long={long}, heading={heading}")
                 break
         return alt
 
@@ -90,7 +90,7 @@ class Custom_mav():
             self.target_component,  # Target component ID
             512,  # Command ID's - MAV_CMD_REQUEST_MESSAGE
             0,  # Confirmation
-            33,  # Message ID to request - GLOBAL_POSITION_INT
+            30,  # Message ID to request - GLOBAL_POSITION_INT
             0, 0, 0, 0, 0, 0,   # Params 1-7 (not used, set to 0)
             0,  # Param 8 (request rate in HZ, 0 for once)
             )
@@ -98,17 +98,50 @@ class Custom_mav():
             atti_msg = self.myMav.recv_match(type="ATTITUDE", blocking=False)
 
             if atti_msg:
-                print(atti_msg)
                 roll = atti_msg.roll
                 pitch = atti_msg.pitch
                 yaw = atti_msg.yaw
-                self.progress(f"atti: {roll}, {pitch}, {yaw}")
                 break 
 
         return (roll,pitch,yaw)  
 
-            
 
+    def takeoff_to100(self):
+        self.progress("starting takeoff...")
+
+        self.myMav.mav.command_long_send(
+            self.target_system,  # Target system ID
+            self.target_component,  # Target component ID
+            mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,0,  # Command ID's - MAV_CMD_REQUEST_MESSAGE
+            0,0,0,0,0,0,100
+        )
+
+        while True:
+            time.sleep(0.1)
+
+            self.myMav.mav.command_long_send(
+            self.target_system,  # Target system ID
+            self.target_component,  # Target component ID
+            512,  # Command ID's - MAV_CMD_REQUEST_MESSAGE
+            0,  # Confirmation
+            30,  # Message ID to request - GLOBAL_POSITION_INT
+            0, 0, 0, 0, 0, 0,   # Params 1-7 (not used, set to 0)
+            0,  # Param 8 (request rate in HZ, 0 for once)
+            )
+
+            pos_msg = self.myMav.recv_match(type="GLOBAL_POSITION_INT", blocking=False)
+            if pos_msg:       
+                alt = (pos_msg.alt / 1000.0) - 584.09
+                self.progress(f"GLOBAL_POSITION_INT : altitude = {alt}")
+                if 99 < alt < 100:
+                    break
+        self.progress("copter in 100 m")
+            
+    def close(self):
+        self.myMav.close()
+        self.progress("mavlink closed")
+
+        
     def progress(self,args):
         print(f"MAV: {args}")
         pass

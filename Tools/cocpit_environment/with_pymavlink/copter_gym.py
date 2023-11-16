@@ -30,7 +30,7 @@ class CopterGym(gymnasium.Env):
         print(f"Gym: step {self.current_step}")
     
         # Send control commands to the drone using the SITL connection
-        # action = [1500,1500,1500,1500]
+        # Example: action = [1500,1500,1500,1500]
         self.sitl_env.set_rc(action)
 
         # Receive telemetry data from the drone
@@ -41,6 +41,9 @@ class CopterGym(gymnasium.Env):
 
         # Check if the episode is done
         done = self.current_step >= self.max_steps
+
+        if done:
+            self.close()
 
         self.current_step += 1
 
@@ -68,6 +71,8 @@ class CopterGym(gymnasium.Env):
         # Implement rendering of the environment (optional)
         pass
 
+    def close(self):
+        self.sitl_env.close()
 
 
 

@@ -2,6 +2,7 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 import numpy as np
+import torch.nn.init as init
 
 
 
@@ -20,14 +21,19 @@ class PI_Network(nn.Module):
         self.fc2 = nn.Linear(64,64)
         self.fc3 = nn.Linear(64,action_dim)
 
+        self.initialize_weights()
+
     def forward(self, obs):
         x = F.tanh(self.fc1(obs))
         x = F.tanh(self.fc2(x))
         action = self.fc3(x)
-
-        action = ((action + 1) * (self.upper_bound-self.lower_bound) / 2 +self.lower_bound)
-
+        action = ((action + 1) * (self.upper_bound-self.lower_bound) / 2 +self.lower_bound) 
         return action
+    
+
+    def initialize_weights(self):
+        weghits = np.random.uniform(-0.05, 0.05, size=self.fc1.weight.shape)
+        self.fc1.weight.data = torch.tensor(weghits, dtype=torch.float32)
 
 
 
@@ -35,6 +41,49 @@ class PI_Network(nn.Module):
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+############################################################
+
+                #checking diferent initial wheights
+
+# pi_net = PI_Network(1,1,1000,2000)
+
+# # weights = pi_net.fc1.weight
+
+# # print(weights)
+
+# obs = torch.tensor([1],dtype=torch.float32)
+
+# with torch.no_grad():
+#     out = pi_net(obs)
+
+
+# print(out)
+
+############################################################
+
+                # see net dict
 
 # pi_network = PI_Network(obs_dim=2, action_dim=4, lower_bound=1, upper_bound=100)
 
