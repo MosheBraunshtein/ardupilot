@@ -31,6 +31,15 @@ class CopterGym(gymnasium.Env):
 
         '''
         print(f"Gym: step {self.current_step}")
+
+                # Check if the episode is done
+        done = self.current_step >= self.max_steps
+
+        if done:
+            # save copter trajectory
+            self.reference_trajectory.save_real_path()
+            self.close()
+            return None,None,done
     
         # Send control commands to the drone using the SITL connection
         # Example: action = [1500,1500,1500,1500]
@@ -44,15 +53,9 @@ class CopterGym(gymnasium.Env):
         self.reference_trajectory.real_path_step(lat=lat, long=long, alt=alt)
 
         # Calculate reward (simplified for demonstration)
-        reward = -np.sqrt(1 ** 2 + 1 ** 2)  # Penalize distance from the origin
+        reward = self.reference_trajectory.distance_realLocation_toPath(realGPS=gps)
 
-        # Check if the episode is done
-        done = self.current_step >= self.max_steps
-
-        if done:
-            # save copter trajectory
-            self.reference_trajectory.save_real_path()
-            self.close()
+        self.progress(f" REWARD = {reward}")
 
 
         self.current_step += 1
@@ -70,7 +73,7 @@ class CopterGym(gymnasium.Env):
 
         self.progress(f"generate refernce trajectory for {angle_of_attack} deg")
 
-        self.reference_trajectory = trajectory(lat=initial_lat, long=initial_long, alt=initial_alt, heading=initial_heading, angle_of_attack=angle_of_attack)
+        self.reference_trajectory = trajectory(lat=initial_lat, long=initial_long, alt=initial_alt, heading=initial_heading, angle_of_attack=angle_of_attack,real_path_Nsteps=self.max_steps)
 
         # Reset the environment to the initial state
         self.current_step = 0
@@ -83,6 +86,12 @@ class CopterGym(gymnasium.Env):
         return attitude
     
 
+
+    def reward(self,min_distance,prev_point):
+        reward = 0
+
+        return reward
+
     def render(self, mode='human'):
         # Implement rendering of the environment (optional)
         pass
@@ -91,7 +100,7 @@ class CopterGym(gymnasium.Env):
         self.sitl_env.close()
 
     def progress(self,data):
-        print(f"Gym:{data}")
+        print(f"Gym:{data}\n")
 
 
 

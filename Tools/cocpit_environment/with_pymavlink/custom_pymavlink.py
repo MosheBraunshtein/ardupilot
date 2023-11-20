@@ -72,7 +72,7 @@ class Custom_mav():
                 lat = pos_msg.lat / 10000000
                 long = pos_msg.lon / 10000000
                 heading = pos_msg.hdg / 100
-                self.progress(f"GLOBAL_POSITION_INT : lat={lat}, long={long}, heading={heading}")
+                # self.progress(f"GLOBAL_POSITION_INT : lat={lat}, long={long}, heading={heading}")
                 break
         return lat,long,alt
 
@@ -98,9 +98,9 @@ class Custom_mav():
             atti_msg = self.myMav.recv_match(type="ATTITUDE", blocking=False)
 
             if atti_msg:
-                roll = atti_msg.roll
-                pitch = atti_msg.pitch
-                yaw = atti_msg.yaw
+                roll = math.degrees(atti_msg.roll) 
+                pitch = math.degrees(atti_msg.pitch)
+                yaw = math.degrees(atti_msg.yaw)
                 break 
 
         return (roll,pitch,yaw)  
@@ -137,15 +137,14 @@ class Custom_mav():
                 if first_message: 
                     initial_location_alt = pos_msg.alt 
                     first_message = False
-                    if initial_location_alt != 584050:
-                        raise ValueError(f"Error: initial alt is not zero. initial_alt = {initial_location_alt}")
+                    # if initial_location_alt != 584050:
+                    #     raise ValueError(f"Error: initial alt is not zero. initial_alt = {initial_location_alt}")
                 
                 alt = (pos_msg.alt - initial_location_alt) / 1000.0                
                 lat = pos_msg.lat / 10000000
                 long = pos_msg.lon / 10000000
                 heading = pos_msg.hdg / 100
 
-                self.progress(f" altitude = {alt}")
                 if 99 < alt:
                     break
         self.progress("copter in 100 m")
@@ -157,7 +156,7 @@ class Custom_mav():
 
         
     def progress(self,args):
-        print(f"MAV: {args}")
+        print(f"MAV: {args}\n")
         pass
 
 

@@ -14,7 +14,7 @@ ax = fig.add_subplot(111, projection='3d')
 
 
 # Load real path from the file
-with open(f'saved_data/predicted_gps_path/real_path_{args.angle}.pkl', 'rb') as file:
+with open(f'saved_data/real_path/real_path_{args.angle}.pkl', 'rb') as file:
     real_path = pickle.load(file)
 
 real_latitudes, real_longitudes, real_altitudes = zip(*real_path)

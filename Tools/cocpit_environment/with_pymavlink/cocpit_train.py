@@ -59,15 +59,16 @@ if __name__ == "__main__":
     try: 
 
         env = CopterGym(out_of_bound_penalty=100, max_steps=100)
-
         pi_net = PI_Network(obs_dim=3,action_dim=4,lower_bound=1000,upper_bound=2000)
 
         cool_print()
         reminder_print()
 
-        attitude = env.reset()
-
-        test(obs=attitude)
+        for i in np.arange(3):
+            print(f"TEST: episode {i}")
+            attitude = env.reset()
+            test(obs=attitude)
+            print("TEST: after test")
 
     except ValueError as e:
          print(e)
@@ -75,8 +76,4 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
          print("\n shutting down . . .  \n")
          env.close()
-
-
-
-
 
