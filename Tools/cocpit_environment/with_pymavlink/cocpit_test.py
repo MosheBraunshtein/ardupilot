@@ -19,7 +19,9 @@ def test(obs):
 
             action_numpy = action[0].detach().numpy()
 
-            action_numpy_pro = [action_numpy[0],action_numpy[1],action_numpy[2],action_numpy[3]]
+            roll, pitch, throttle, yaw = action_numpy
+
+            action_numpy_pro = [roll,pitch,throttle,0]
 
             print(f"net : action = {action_numpy_pro}")
             
@@ -42,6 +44,15 @@ def cool_print():
             """)
         sleep(2)
 
+def reminder_print():
+        print("""
+        set parameters values:
+            - angle_max
+            - sim_rate 
+            - msg mavlink rate
+            - vehicle parameters
+        """)
+
 
 if __name__ == "__main__":
 
@@ -52,12 +63,15 @@ if __name__ == "__main__":
         pi_net = PI_Network(obs_dim=3,action_dim=4,lower_bound=1000,upper_bound=2000)
 
         cool_print()
+        reminder_print()
 
         attitude = env.reset()
-        print("see heading")
-        sleep(5)
+
         test(obs=attitude)
 
+    except ValueError as e:
+         print(e)
+         
     except KeyboardInterrupt:
          print("\n shutting down . . .  \n")
          env.close()

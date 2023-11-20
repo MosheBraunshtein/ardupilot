@@ -1,6 +1,8 @@
 import gymnasium
 import numpy as np
 from env import Sitl
+import random
+from reference_flight import trajectory
 
 
 class CopterGym(gymnasium.Env):
@@ -21,6 +23,7 @@ class CopterGym(gymnasium.Env):
         self.drone_state = np.zeros(3)  # Initial state
         self.out_of_bounds_penalty = out_of_bound_penalty
         
+        self.reference_trajectory = None
 
     def step(self, action):
         '''
@@ -34,7 +37,11 @@ class CopterGym(gymnasium.Env):
         self.sitl_env.set_rc(action)
 
         # Receive telemetry data from the drone
-        gps, attitude = self.sitl_env.get_gps_and_attitude()
+        gps , attitude = self.sitl_env.get_gps_and_attitude()
+
+        lat, long, alt = gps
+
+        self.reference_trajectory.real_path_step(lat=lat, long=long, alt=alt)
 
         # Calculate reward (simplified for demonstration)
         reward = -np.sqrt(1 ** 2 + 1 ** 2)  # Penalize distance from the origin
@@ -43,7 +50,10 @@ class CopterGym(gymnasium.Env):
         done = self.current_step >= self.max_steps
 
         if done:
+            # save copter trajectory
+            self.reference_trajectory.save_real_path()
             self.close()
+
 
         self.current_step += 1
 
@@ -54,7 +64,13 @@ class CopterGym(gymnasium.Env):
         start new episode
         '''
         # start new session
-        self.sitl_env.run()
+        initial_lat, initial_long, initial_alt, initial_heading = self.sitl_env.run()
+
+        angle_of_attack = random.randint(30,40)
+
+        self.progress(f"generate refernce trajectory for {angle_of_attack} deg")
+
+        self.reference_trajectory = trajectory(lat=initial_lat, long=initial_long, alt=initial_alt, heading=initial_heading, angle_of_attack=angle_of_attack)
 
         # Reset the environment to the initial state
         self.current_step = 0
@@ -73,6 +89,9 @@ class CopterGym(gymnasium.Env):
 
     def close(self):
         self.sitl_env.close()
+
+    def progress(self,data):
+        print(f"Gym:{data}")
 
 
 

@@ -5,6 +5,8 @@ import argparse
 import asyncio
 from time import sleep
 from custom_pymavlink import Custom_mav  
+from reference_flight import trajectory
+import random
 
 
 class Sitl:
@@ -17,6 +19,7 @@ class Sitl:
         self.py_connect = None
         self._change_os_dir()
         self.myMav = Custom_mav(ip_sitl=self.container_ip)
+        self.reference_trajectory = None
 
     def  _change_os_dir(self):
         with_pymavlink = os.path.dirname(__file__)
@@ -27,7 +30,6 @@ class Sitl:
 
 
     def run(self):
-        self.progress("set parameters values: angle_max, sim_")
         try:
             self.sitl = subprocess.Popen(["sim_vehicle.py","-v","ArduCopter","--out",f"{self.mp_ip}:14550","--out",f"{self.container_ip}:14551"],stdout=subprocess.PIPE, stderr=subprocess.PIPE,stdin=subprocess.PIPE, text=True)
         except subprocess.CalledProcessError as e:
@@ -41,21 +43,32 @@ class Sitl:
                 self.progress("call to pymavlink")
                 self.myMav.connect()
                 break
-        self.sitl.stdin.write("mode GUIDED\n")
-        self.sitl.stdin.flush()
+        self.changeModeToGuided()
+
         self.myMav.arm_copter()
-        self.myMav.takeoff_to100()
+
+        initial_lat, inital_long, initial_alt, heading = self.myMav.takeoff_to100()
+
+        self.changeModeToStabilize()
+
+        return initial_lat, inital_long, initial_alt, heading
 
 
     def set_rc(self,rc_channels):
         self.myMav.send_rc_command(rc_channel_values=rc_channels)
-        pass
 
     def get_gps_and_attitude(self):
         gps = self.myMav.get_gps()
         attitude = self.myMav.get_attitude()
         return gps , attitude
             
+    def changeModeToGuided(self):
+        self.sitl.stdin.write("mode GUIDED\n")
+        self.sitl.stdin.flush()
+    
+    def changeModeToStabilize(self):
+        self.sitl.stdin.write("mode STABILIZE\n")
+        self.sitl.stdin.flush()
 
     def close(self):
         self.myMav.close()

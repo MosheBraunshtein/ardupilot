@@ -74,7 +74,7 @@ class Custom_mav():
                 heading = pos_msg.hdg / 100
                 self.progress(f"GLOBAL_POSITION_INT : lat={lat}, long={long}, heading={heading}")
                 break
-        return alt
+        return lat,long,alt
 
     def get_attitude(self):
 
@@ -108,6 +108,8 @@ class Custom_mav():
 
     def takeoff_to100(self):
         self.progress("starting takeoff...")
+        first_message = True
+        initial_location_alt = 0
 
         self.myMav.mav.command_long_send(
             self.target_system,  # Target system ID
@@ -130,12 +132,24 @@ class Custom_mav():
             )
 
             pos_msg = self.myMav.recv_match(type="GLOBAL_POSITION_INT", blocking=False)
-            if pos_msg:       
-                alt = (pos_msg.alt / 1000.0) - 584.09
-                self.progress(f"GLOBAL_POSITION_INT : altitude = {alt}")
-                if 99 < alt < 100:
+            if pos_msg:    
+    
+                if first_message: 
+                    initial_location_alt = pos_msg.alt 
+                    first_message = False
+                    if initial_location_alt != 584050:
+                        raise ValueError(f"Error: initial alt is not zero. initial_alt = {initial_location_alt}")
+                
+                alt = (pos_msg.alt - initial_location_alt) / 1000.0                
+                lat = pos_msg.lat / 10000000
+                long = pos_msg.lon / 10000000
+                heading = pos_msg.hdg / 100
+
+                self.progress(f" altitude = {alt}")
+                if 99 < alt:
                     break
         self.progress("copter in 100 m")
+        return lat,long,alt,heading
             
     def close(self):
         self.myMav.close()
