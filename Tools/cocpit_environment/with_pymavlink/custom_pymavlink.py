@@ -12,6 +12,7 @@ class Custom_mav():
         self.target_system = None
         self.target_component = None
         self.isArmed = False
+        self.isTakeoff = False
 
     def connect(self):
         self.myMav = mavutil.mavlink_connection(self.connection_string)
@@ -52,6 +53,20 @@ class Custom_mav():
             time.sleep(0.1)
         self.progress("autopilot is armed") 
         return self.isArmed
+    
+    def takeoff(self):
+        while self.isTakeoff is False:
+            self.myMav.mav.command_long_send(
+            self.target_system,  # Target system ID
+            self.target_component,  # Target component ID
+            mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,0,  # Command ID's - MAV_CMD_REQUEST_MESSAGE
+            0,0,0,0,0,0,100)
+            response = self.myMav.recv_match(type='COMMAND_ACK', blocking=True)
+            if response.command==22 and response.result==0:
+                self.progress(f"command: {response.command}, result: {response.result}")
+                self.isTakeoff= True
+            time.sleep(0.1)
+        self.progress("takeoff command excepted")
 
     def get_gps(self):
         while True:
@@ -107,16 +122,10 @@ class Custom_mav():
 
 
     def takeoff_to100(self):
-        self.progress("starting takeoff...")
+        self.progress("send takeoff request ...")
+        self.takeoff()
         first_message = True
         initial_location_alt = 0
-
-        self.myMav.mav.command_long_send(
-            self.target_system,  # Target system ID
-            self.target_component,  # Target component ID
-            mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,0,  # Command ID's - MAV_CMD_REQUEST_MESSAGE
-            0,0,0,0,0,0,100
-        )
 
         while True:
             time.sleep(0.1)
@@ -126,9 +135,7 @@ class Custom_mav():
             self.target_component,  # Target component ID
             512,  # Command ID's - MAV_CMD_REQUEST_MESSAGE
             0,  # Confirmation
-            30,  # Message ID to request - GLOBAL_POSITION_INT
-            0, 0, 0, 0, 0, 0,   # Params 1-7 (not used, set to 0)
-            0,  # Param 8 (request rate in HZ, 0 for once)
+            30, 0, 0, 0, 0, 0, 0, 0,  # Message ID to request - GLOBAL_POSITION_INT
             )
 
             pos_msg = self.myMav.recv_match(type="GLOBAL_POSITION_INT", blocking=False)
@@ -144,10 +151,10 @@ class Custom_mav():
                 lat = pos_msg.lat / 10000000
                 long = pos_msg.lon / 10000000
                 heading = pos_msg.hdg / 100
-
+                self.progress(f"altitude = {alt}")
                 if 99 < alt:
                     break
-        self.progress("copter in 100 m")
+        self.progress("copter altitude = 100 m")
         return lat,long,alt,heading
             
     def close(self):

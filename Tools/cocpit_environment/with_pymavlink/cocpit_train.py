@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-
+from colorama import init, Fore, Style
 import torch 
 import numpy as np
 from env import Sitl
@@ -53,10 +53,16 @@ def reminder_print():
             - vehicle parameters
         """)
 
+def report(episode_N, angle_of_attack,total_reward,steps):
+    print(Fore.GREEN + "{:15} {:<20} {:<15} {:<15}".format("Episode","Angle of Attack", "Total Reward", "Steps"))
+    print("="*45)
+    print("{:<15} {:<20} {:<15} {:<15}".format(episode_N, angle_of_attack, total_reward, steps) + Style.RESET_ALL)
 
 if __name__ == "__main__":
 
     try: 
+
+        init() #coloroma
 
         env = CopterGym(out_of_bound_penalty=100, max_steps=100)
         pi_net = PI_Network(obs_dim=3,action_dim=4,lower_bound=1000,upper_bound=2000)
@@ -64,11 +70,10 @@ if __name__ == "__main__":
         cool_print()
         reminder_print()
 
-        for i in np.arange(3):
-            print(f"TEST: episode {i}")
+        for i in np.arange(10):
             attitude = env.reset()
             test(obs=attitude)
-            print("TEST: after test")
+            report(i,env.angle_of_attack,env.total_reward,100)
 
     except ValueError as e:
          print(e)
@@ -76,4 +81,6 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
          print("\n shutting down . . .  \n")
          env.close()
+
+
 
