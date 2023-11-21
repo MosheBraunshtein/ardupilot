@@ -17,6 +17,7 @@ class trajectory():
         self.path = []
         self.real_path = np.zeros((real_path_Nsteps,3))
         self.real_path_i = 0
+        self.minimum_distance_index_prev = 0
 
         self.generate_path()
         self.save_path()
@@ -98,6 +99,7 @@ class trajectory():
         distances = np.zeros(points)
         lat,long,alt = realGPS
 
+        #TODO: should be more efficient
         for i, (x, y, z) in enumerate(self.path):
             distance = math.sqrt((lat - x)**2 + (long - y)**2 + (alt - z)**2)
             distances[i] = distance
@@ -106,9 +108,13 @@ class trajectory():
 
             # # Annotate distance near the line
             # ax.text((lat + x) / 2, (long + y) / 2, (alt + z) / 2, f'{distance:.2f}', color='red')
+        # Find the index of the minimum distance
         min_distance = min(distances)
+        min_distance_index = np.argmin(distances)
 
-        return min_distance
+        bad_step = min_distance_index < self.minimum_distance_index_prev
+    
+        return min_distance, bad_step
 
     
     def real_path_step(self,lat,long,alt):

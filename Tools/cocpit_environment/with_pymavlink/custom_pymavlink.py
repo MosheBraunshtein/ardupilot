@@ -48,10 +48,10 @@ class Custom_mav():
             )
             response = self.myMav.recv_match(type='COMMAND_ACK', blocking=True)
             if response.command==400 and response.result==0:
-                self.progress(f"command: {response.command}, result: {response.result}")
+                # self.progress(f"command: {response.command}, result: {response.result}")
                 self.isArmed = True
             time.sleep(0.1)
-        self.progress("autopilot is armed") 
+        # self.progress("autopilot is armed") 
         return self.isArmed
     
     def takeoff(self):
@@ -63,7 +63,7 @@ class Custom_mav():
             0,0,0,0,0,0,100)
             response = self.myMav.recv_match(type='COMMAND_ACK', blocking=True)
             if response.command==22 and response.result==0:
-                self.progress(f"command: {response.command}, result: {response.result}")
+                # self.progress(f"command: {response.command}, result: {response.result}")
                 self.isTakeoff= True
             time.sleep(0.1)
         self.progress("takeoff command excepted")
@@ -122,7 +122,7 @@ class Custom_mav():
 
 
     def takeoff_to100(self):
-        self.progress("send takeoff request ...")
+        # self.progress("send takeoff request ...")
         self.takeoff()
         first_message = True
         initial_location_alt = 0
@@ -151,7 +151,7 @@ class Custom_mav():
                 lat = pos_msg.lat / 10000000
                 long = pos_msg.lon / 10000000
                 heading = pos_msg.hdg / 100
-                self.progress(f"altitude = {alt}")
+                # self.progress(f"altitude = {alt}")
                 if 99 < alt:
                     break
         self.progress("copter altitude = 100 m")
@@ -165,8 +165,6 @@ class Custom_mav():
     def progress(self,args):
         print(f"MAV: {args}\n")
         pass
-
-
 
 
 

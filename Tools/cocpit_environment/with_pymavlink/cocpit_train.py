@@ -4,6 +4,8 @@ import torch
 import numpy as np
 from env import Sitl
 from time import sleep
+import time
+import sys
 
 from copter_gym import CopterGym
 
@@ -25,7 +27,7 @@ def test(obs):
 
             print(f"net : action = {action_numpy_pro}")
             
-            next_obs, reward, done = env.step(action_numpy_pro)
+            next_obs, penalty, done = env.step(action_numpy_pro)
 
             if done:
                 break
@@ -46,17 +48,33 @@ def cool_print():
 
 def reminder_print():
         print("""
-        set parameters values:
+        set parameters values in "sitl parameters list":
             - angle_max
             - sim_rate 
             - msg mavlink rate
             - vehicle parameters
         """)
 
-def report(episode_N, angle_of_attack,total_reward,steps):
-    print(Fore.GREEN + "{:15} {:<20} {:<15} {:<15}".format("Episode","Angle of Attack", "Total Reward", "Steps"))
-    print("="*45)
-    print("{:<15} {:<20} {:<15} {:<15}".format(episode_N, angle_of_attack, total_reward, steps) + Style.RESET_ALL)
+def report_to_file(episode_N, angle_of_attack,total_penalty,steps,time):    
+    filename = "/ardupilot/Tools/cocpit_environment/with_pymavlink/saved_data/reports/output.txt"
+    with open(filename, "a") as file:
+        sys.stdout = file  # Redirect standard output to the file
+        print(f"""
+    ╔════════════════════════╗
+    ║   report {episode_N}         ║
+    ╚════════════════════════╝
+                """)
+        print("{:15} {:<20} {:<15} {:<15} {:<15}".format("Episode","Angle of Attack", "Total penalty", "Steps","time"))
+        print("="*60)
+        print("{:<15} {:<20} {:<15} {:<15} {:<15} ".format(episode_N, angle_of_attack, total_penalty, steps, time))
+        sys.stdout = sys.__stdout__  # Reset standard output to the console
+
+        print(f"""{Fore.GREEN}
+    ╔════════════════════════╗
+    ║   episode {episode_N} reported to file       ║
+    ╚════════════════════════╝
+                {Style.RESET_ALL}""")
+
 
 if __name__ == "__main__":
 
@@ -71,9 +89,12 @@ if __name__ == "__main__":
         reminder_print()
 
         for i in np.arange(10):
+            start_time = time.time()
             attitude = env.reset()
             test(obs=attitude)
-            report(i,env.angle_of_attack,env.total_reward,100)
+            end_time = time.time()
+            duration = end_time - start_time
+            report_to_file(i,env.angle_of_attack,env.total_penalty,env.current_step,duration)
 
     except ValueError as e:
          print(e)

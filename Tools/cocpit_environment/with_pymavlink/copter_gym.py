@@ -6,7 +6,7 @@ from reference_flight import trajectory
 
 
 class CopterGym(gymnasium.Env):
-    def __init__(self,out_of_bound_penalty=100,max_steps=100):
+    def __init__(self,out_of_bound_penalty=100,max_steps=300):
         super(CopterGym, self).__init__()
         
         # Define the action space (roll, pitch, yaw, throttle)
@@ -18,6 +18,7 @@ class CopterGym(gymnasium.Env):
         # Other environment-specific parameters
         self.max_steps = max_steps
         self.out_of_bounds_penalty = out_of_bound_penalty
+        self.isCrushed = False
         
 
     def step(self, action):
@@ -28,7 +29,7 @@ class CopterGym(gymnasium.Env):
         print(f"Gym: step {self.current_step}")
 
                 # Check if the episode is done
-        done = self.current_step >= self.max_steps
+        done = self.current_step >= self.max_steps or self.isCrushed
 
         if done:
             # save copter trajectory
@@ -47,17 +48,19 @@ class CopterGym(gymnasium.Env):
 
         self.reference_trajectory.real_path_step(lat=lat, long=long, alt=alt)
 
-        # Calculate reward (simplified for demonstration)
-        reward = self.reference_trajectory.distance_realLocation_toPath(realGPS=gps)
+        distance_form_refPath,bad_step = self.reference_trajectory.distance_realLocation_toPath(realGPS=gps)
 
-        self.total_reward += reward
+        penalty = self.compute_penalty(min_distance=distance_form_refPath,bad_step=bad_step)
 
-        self.progress(f" REWARD = {reward}")
+        self.total_penalty += penalty
+
+        self.progress(f"PENALTY = {penalty}")
 
 
         self.current_step += 1
+        self.isCrushed = alt < 0
 
-        return attitude, reward, done
+        return attitude, penalty, done
 
     def reset(self):
         '''
@@ -78,21 +81,31 @@ class CopterGym(gymnasium.Env):
         self.reference_trajectory = trajectory(lat=initial_lat, long=initial_long, alt=initial_alt, heading=initial_heading, angle_of_attack=self.angle_of_attack,real_path_Nsteps=self.max_steps)
 
         self.current_step = 0
-        self.total_reward = 0
+        self.total_penalty = 0
 
         # get sensor data effected by the action
         gps, attitude = self.sitl_env.get_gps_and_attitude()
-
-        #some manipulation with gps to get reward
  
         return attitude
     
 
 
-    def reward(self,min_distance,prev_point):
-        reward = 0
+    def compute_penalty(self,min_distance,bad_step):
+        '''
+        motivation : overall penalty = 70% for min_distance , 30% for bad_step
 
-        return reward
+        my assumption
+
+        min_distance can be large value (0-1000) when the copter goes wrong path, in this situation the value of bad_step is not importent 
+
+        but if the copter in goos sense, min_distance value will be small (0-0.4 m) so the value of bad_step will be critic.
+
+        for conclusion : bad_step begin to affect in small distances from ref
+
+        '''
+        penalty = min_distance + 0.3*bad_step
+
+        return penalty
 
     def render(self, mode='human'):
         # Implement rendering of the environment (optional)

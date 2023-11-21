@@ -31,6 +31,7 @@ class Sitl:
 
 
     def run(self):
+        self.progress("run ArduCopter")
         try:
             self.sitl = subprocess.Popen(["sim_vehicle.py","-v","ArduCopter","--out",f"{self.mp_ip}:14550","--out",f"{self.container_ip}:14551"],stdout=subprocess.PIPE, stderr=subprocess.PIPE,stdin=subprocess.PIPE, text=True)
             #  self.sitl = subprocess.Popen(["sim_vehicle.py","-v","ArduCopter","--out",f"{self.container_ip}:14551"],stdout=subprocess.PIPE, stderr=subprocess.PIPE,stdin=subprocess.PIPE, text=True)
@@ -39,7 +40,7 @@ class Sitl:
 
         while True:   
             new_line = self.sitl.stdout.readline()
-            self.progress(new_line)
+            # self.progress(new_line)
 
             if "Flight" in new_line:
                 self.progress("call to pymavlink")
@@ -100,5 +101,5 @@ class Sitl:
                     print(f"Error terminating process {process_name}: {e}")
 
     def progress(self,arg):
-        print(f"SITL: {arg}")
+        print(f"SITL: {arg}\n")
 
