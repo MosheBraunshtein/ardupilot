@@ -27,13 +27,13 @@ class CopterGym(gymnasium.Env):
         '''
         print(f"Gym: step {self.current_step}")
 
-        # Check if the episode is done
-        done = self.current_step >= self.max_steps or self.isCrushed
+        # # Check if the episode is done
+        # done = self.current_step >= self.max_steps or self.isCrushed
 
-        if done:
-            self.flight_path.save_real_path()
-            self.sitl_env.close()
-            return None,None,done
+        # if done:
+        #     self.flight_path.save_real_path()
+        #     self.sitl_env.close()
+        #     return None,0,done
     
         # Example: action = [1500,1500,1500,1500]
         self.sitl_env.set_rc(action)
@@ -45,12 +45,17 @@ class CopterGym(gymnasium.Env):
 
         penalty = self.compute_penalty(min_distance=distance_form_refPath,bad_step=bad_step)
 
-        self.total_penalty += penalty
-
         self.progress(f"PENALTY = {penalty}")
 
         self.current_step += 1
         self.isCrushed = alt < 0
+
+        # Check if the episode is done
+        done = self.current_step >= self.max_steps or self.isCrushed
+
+        if done:
+            self.flight_path.save_real_path()
+            self.sitl_env.close()
 
         return attitude, penalty, done
 
@@ -73,7 +78,6 @@ class CopterGym(gymnasium.Env):
         self.flight_path = FlightPath(lat=initial_lat, long=initial_long, alt=initial_alt, heading=initial_heading, angle_of_attack=self.angle_of_attack,real_path_Nsteps=self.max_steps)
 
         self.current_step = 0
-        self.total_penalty = 0
 
         # get sensor data effected by the action
         gps, attitude = self.sitl_env.get_gps_and_attitude()
@@ -94,7 +98,7 @@ class CopterGym(gymnasium.Env):
         for conclusion : bad_step begin to affect in small distances from ref
 
         '''
-        penalty = min_distance + 0.3*bad_step
+        penalty = min_distance + 10*bad_step
 
         return penalty
 

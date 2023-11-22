@@ -3,6 +3,9 @@
 import torch 
 import numpy as np
 from time import sleep
+import time
+
+from utils.prints import cool_print , reminder_print , report_to_file
 
 from gym import CopterGym
 
@@ -34,35 +37,23 @@ def test(obs):
             print(f"net : obs = {obs}")
 
 
-def cool_print():
-        print("""
-╔════════════════════════╗
-║   Welcome to Drone Gym ║
-╚════════════════════════╝
-* by moshe braunshtein ! *
-            """)
-        sleep(2)
-
-def reminder_print():
-        print("""
-        set parameters values:
-            - angle_max
-            - sim_rate 
-            - msg mavlink rate
-            - vehicle parameters
-        """)
-
-
 if __name__ == "__main__":
 
     try: 
 
-        env = CopterGym(out_of_bound_penalty=100, max_steps=100)
-
-        pi_net = PI_Network(obs_dim=3,action_dim=4,lower_bound=1000,upper_bound=2000)
+        env = CopterGym(max_steps=100)
+        pi_net = PI_Network(obs_dim=3,action_dim=4,action_lower_bound=1000,action_upper_bound=2000)
 
         cool_print()
         reminder_print()
+
+        start = time.time()
+        attitude = env.reset()
+        test(obs=attitude)
+        end = time.time()
+
+        episode_duration = int(end-start)
+        report_to_file(0,env.angle_of_attack,env.total_penalty,env.current_step,episode_duration)
 
         attitude = env.reset()
 
@@ -74,8 +65,3 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
          print("\n shutting down . . .  \n")
          env.close()
-
-
-
-
-
