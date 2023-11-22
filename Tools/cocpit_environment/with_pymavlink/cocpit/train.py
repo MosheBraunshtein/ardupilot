@@ -1,13 +1,16 @@
 #!/usr/bin/env python3
-
+from colorama import init, Fore, Style
 import torch 
 import numpy as np
-from env import Sitl
 from time import sleep
+import time
+import sys
+sys.path.append("/ardupilot/Tools/cocpit_environment/with_pymavlink")
 
-from copter_gym import CopterGym
+from utils.prints import cool_print , reminder_print , report_to_file
+from gym import CopterGym
+from drl.pi_network import PI_Network
 
-from pi_network import PI_Network
 
 def test(obs):
     with torch.no_grad():
@@ -25,7 +28,7 @@ def test(obs):
 
             print(f"net : action = {action_numpy_pro}")
             
-            next_obs, reward, done = env.step(action_numpy_pro)
+            next_obs, penalty, done = env.step(action_numpy_pro)
 
             if done:
                 break
@@ -35,39 +38,27 @@ def test(obs):
             print(f"net : obs = {obs}")
 
 
-def cool_print():
-        print("""
-╔════════════════════════╗
-║   Welcome to Drone Gym ║
-╚════════════════════════╝
-* by moshe braunshtein ! *
-            """)
-        sleep(2)
-
-def reminder_print():
-        print("""
-        set parameters values:
-            - angle_max
-            - sim_rate 
-            - msg mavlink rate
-            - vehicle parameters
-        """)
-
-
 if __name__ == "__main__":
 
     try: 
 
-        env = CopterGym(out_of_bound_penalty=100, max_steps=100)
+        init() #coloroma
 
-        pi_net = PI_Network(obs_dim=3,action_dim=4,lower_bound=1000,upper_bound=2000)
+        env = CopterGym(max_steps=100)
+        pi_net = PI_Network(obs_dim=3,action_dim=4,action_lower_bound=1000,action_upper_bound=2000)
 
         cool_print()
         reminder_print()
 
-        attitude = env.reset()
+        for i in np.arange(10):
+            start = time.time()
 
-        test(obs=attitude)
+            attitude = env.reset()
+            test(obs=attitude)
+
+            end = time.time()
+            episode_duration = int(end-start)
+            report_to_file(i,env.angle_of_attack,env.total_penalty,env.current_step,episode_duration)
 
     except ValueError as e:
          print(e)
@@ -75,8 +66,6 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
          print("\n shutting down . . .  \n")
          env.close()
-
-
 
 
 

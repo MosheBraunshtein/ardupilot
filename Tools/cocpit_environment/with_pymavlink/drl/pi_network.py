@@ -8,14 +8,14 @@ import torch.nn.init as init
 
 class PI_Network(nn.Module):
 
-    def __init__(self,obs_dim,action_dim,lower_bound,upper_bound) -> None: 
+    def __init__(self,obs_dim,action_dim,action_lower_bound,action_upper_bound) -> None: 
         super().__init__()
         (
             self.lower_bound,
             self.upper_bound
         ) = (
-            torch.tensor(lower_bound, dtype=torch.float32),
-            torch.tensor(upper_bound, dtype=torch.float32),
+            torch.tensor(action_lower_bound, dtype=torch.float32),
+            torch.tensor(action_upper_bound, dtype=torch.float32),
         )
         self.fc1 = nn.Linear(obs_dim,64)
         self.fc2 = nn.Linear(64,64)

@@ -2,15 +2,12 @@
 import os
 import subprocess
 import argparse
-import asyncio
-from time import sleep
 from custom_pymavlink import Custom_mav  
-from reference_flight import trajectory
-import random
 import psutil
 
 
-class Sitl:
+
+class Sitl():
 
     def __init__(self) -> None:
         self.container_ip = "172.17.0.2"
@@ -20,10 +17,10 @@ class Sitl:
         self.py_connect = None
         self._change_os_dir()
         self.myMav = Custom_mav(ip_sitl=self.container_ip)
-        self.reference_trajectory = None
 
     def  _change_os_dir(self):
-        with_pymavlink = os.path.dirname(__file__)
+        cocpit = os.path.dirname(__file__)
+        with_pymavlink = os.path.dirname(cocpit)
         cocpit_environment = os.path.dirname(with_pymavlink)
         Tools = os.path.dirname(cocpit_environment)
         autotest = os.path.join(Tools,"autotest")

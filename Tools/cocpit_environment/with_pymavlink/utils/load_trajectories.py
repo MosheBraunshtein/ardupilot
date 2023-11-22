@@ -1,7 +1,7 @@
 import pickle
 import matplotlib.pyplot as plt
 import argparse
-
+import os
 
 
 parser = argparse.ArgumentParser()
@@ -12,23 +12,26 @@ args = parser.parse_args()
 fig = plt.figure(figsize=(10, 8))
 ax = fig.add_subplot(111, projection='3d')
 
+utils_path = os.path.dirname(__file__)
+with_pymavlink = os.path.dirname(utils_path)
 
 # Load real path from the file
-with open(f'saved_data/real_path/real_path_{args.angle}.pkl', 'rb') as file:
+
+file_realPath = os.path.join(with_pymavlink,'saved_data\\real_path\\real_path_{}.pkl'.format(args.angle))
+with open(file_realPath, 'rb') as file:
     real_path = pickle.load(file)
 
 real_latitudes, real_longitudes, real_altitudes = zip(*real_path)
-
 # Plotting the trajectory
 ax.plot3D(real_longitudes, real_latitudes, real_altitudes, label='Real Path', linestyle='-', color='blue', alpha=0.7)
 
 
 # Load ref path from the file
-with open(f'saved_data/predicted_gps_path/path_{args.angle}.pkl', 'rb') as file:
+file_refPath = os.path.join(with_pymavlink,'saved_data\\ref_path\\path_{}.pkl'.format(args.angle))
+with open(file_refPath, 'rb') as file:
     ref_path = pickle.load(file)
 
 ref_latitudes, ref_longitudes, ref_altitudes = zip(*ref_path)
-
 # Plotting the trajectory
 ax.plot3D(ref_longitudes, ref_latitudes, ref_altitudes, label='Reference Path', linestyle='-', color='red', alpha=0.7)
 

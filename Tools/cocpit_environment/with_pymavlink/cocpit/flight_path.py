@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import pickle
 
 
-class trajectory():
+class FlightPath:
 
     def __init__(self,heading,angle_of_attack,lat,long,alt,real_path_Nsteps) -> None:
 
@@ -15,6 +15,7 @@ class trajectory():
         self.start_alt = alt # meter
 
         self.path = []
+        self.path_Nsteps = 0
         self.real_path = np.zeros((real_path_Nsteps,3))
         self.real_path_i = 0
         self.minimum_distance_index_prev = 0
@@ -65,8 +66,8 @@ class trajectory():
             self.path.append(new_record)
             current_lat, current_long, current_alt = new_record
             # print(f"Next GPS Coordinates predicted: Lat={current_lat}, Long={current_long}, Alt={current_alt}")
-        points = len(self.path)
-        self.progress(f"calculate distance from {points} points in ref_path")
+        self.path_Nsteps = len(self.path)
+        self.progress(f"calculate distance from {self.path_Nsteps} points in ref_path")
 
     def path_linear3d(self):
         # Assuming self.path is a list of tuples (lat, long, alt)
@@ -92,13 +93,12 @@ class trajectory():
         print("3D Line Equation:", line_equation)
 
     #TODO: instead of the following method: generate line from points with least squere, then calculate distance point from path
-    def distance_realLocation_toPath(self,realGPS):
-        points = len(self.path)
-        
-        
-        distances = np.zeros(points)
-        lat,long,alt = realGPS
+    def distance_realLocation_toPath(self,lat,long,alt):
 
+        self.real_path_step(lat=lat,long=long,alt=alt)
+
+        distances = np.zeros(self.path_Nsteps)
+        
         #TODO: should be more efficient
         for i, (x, y, z) in enumerate(self.path):
             distance = math.sqrt((lat - x)**2 + (long - y)**2 + (alt - z)**2)
@@ -108,6 +108,7 @@ class trajectory():
 
             # # Annotate distance near the line
             # ax.text((lat + x) / 2, (long + y) / 2, (alt + z) / 2, f'{distance:.2f}', color='red')
+
         # Find the index of the minimum distance
         min_distance = min(distances)
         min_distance_index = np.argmin(distances)
@@ -151,7 +152,7 @@ class trajectory():
 
     
     def save_path(self):
-        with open(f'/ardupilot/Tools/cocpit_environment/with_pymavlink/saved_data/predicted_gps_path/path_{self.angle_of_attack}.pkl', 'wb') as file:
+        with open(f'/ardupilot/Tools/cocpit_environment/with_pymavlink/saved_data/ref_path/path_{self.angle_of_attack}.pkl', 'wb') as file:
             pickle.dump(self.path, file)
         self.progress(f"save path_{self.angle_of_attack}.pkl")
         
