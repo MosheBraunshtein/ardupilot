@@ -114,8 +114,14 @@ class FlightPath:
         min_distance_index = np.argmin(distances)
 
         bad_step = min_distance_index < self.minimum_distance_index_prev
-    
         return min_distance, bad_step
+    
+    def endpoint_penalty(self,real_path_endpoint):
+        ref_path_endpoint = self.path[self.path_Nsteps-1]
+        ref_lat , ref_long, ref_alt = ref_path_endpoint
+        real_lat, real_long, real_alt = real_path_endpoint
+        distance = math.sqrt((real_lat - ref_lat)**2 + (real_long - ref_long)**2 + (ref_alt - real_alt)**2)
+        return distance > 0.5
 
     
     def real_path_step(self,lat,long,alt):

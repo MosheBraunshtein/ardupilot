@@ -41,7 +41,7 @@ REPORT_STEPS = 1000                 # Number of timesteps between reports
 
 if __name__ == "__main__":
 
-    env = CopterGym(max_steps=100)
+    env = CopterGym(max_steps=500)
     obs_dim = env.observation_space.shape[0]
     action_dim = env.action_space.shape[0]
     lower_bound = env.action_space.low

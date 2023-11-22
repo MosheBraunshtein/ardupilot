@@ -47,15 +47,19 @@ class CopterGym(gymnasium.Env):
 
         self.progress(f"PENALTY = {penalty}")
 
+
         self.current_step += 1
         self.isCrushed = alt < 0
-
         # Check if the episode is done
         done = self.current_step >= self.max_steps or self.isCrushed
 
         if done:
+            # give penalty if real_path.endpoint far from ref_path.endpoint
+            penalty += 100*self.flight_path.endpoint_penalty(real_path_endpoint=(lat,long,alt))
+            self.progress(f"endpoint PENALTY = {penalty}")
             self.flight_path.save_real_path()
             self.sitl_env.close()
+
 
         return attitude, penalty, done
 
