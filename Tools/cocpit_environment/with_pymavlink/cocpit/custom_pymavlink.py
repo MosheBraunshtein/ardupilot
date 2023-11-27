@@ -105,12 +105,12 @@ class Custom_mav():
             self.target_component,  # Target component ID
             512,  # Command ID's - MAV_CMD_REQUEST_MESSAGE
             0,  # Confirmation
-            30,  # Message ID to request - GLOBAL_POSITION_INT
+            30,  # Message ID to request - ATTITUDE
             0, 0, 0, 0, 0, 0,   # Params 1-7 (not used, set to 0)
             0,  # Param 8 (request rate in HZ, 0 for once)
             )
 
-            atti_msg = self.myMav.recv_match(type="ATTITUDE", blocking=False)
+            atti_msg = self.myMav.recv_match(type="ATTITUDE", blocking=False) #return : {time_boot_ms : 86699, roll : 0.0006037339335307479, pitch : 0.00042011370533145964, yaw : -0.1262161284685135, rollspeed : -0.005789673421531916, pitchspeed : -0.004265631549060345, yawspeed : 0.0013331874506548047}
 
             if atti_msg:
                 roll = math.degrees(atti_msg.roll) 

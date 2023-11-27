@@ -2,11 +2,12 @@ import math
 import numpy as np
 import matplotlib.pyplot as plt
 import pickle
+from utils.methods_for_calculate_distance import spherical_law_of_cosines
 
 
 class FlightPath:
 
-    def __init__(self,heading,angle_of_attack,lat,long,alt,real_path_Nsteps) -> None:
+    def __init__(self,heading,angle_of_attack,lat,long,alt) -> None:
 
         self.heading = heading # deg
         self.angle_of_attack = angle_of_attack  # 30 degrees pitch for descent
@@ -15,8 +16,8 @@ class FlightPath:
         self.start_alt = alt # meter
 
         self.path = []
-        self.path_Nsteps = 0
-        self.real_path = np.zeros((real_path_Nsteps,3))
+        self.real_path = []
+
         self.real_path_i = 0
         self.minimum_distance_index_prev = 0
 
@@ -95,13 +96,14 @@ class FlightPath:
     #TODO: instead of the following method: generate line from points with least squere, then calculate distance point from path
     def distance_realLocation_toPath(self,lat,long,alt):
 
-        self.real_path_step(lat=lat,long=long,alt=alt)
-
-        distances = np.zeros(self.path_Nsteps)
+        self.real_path.append((lat,long,alt))
+        self.progress(f"real path : ({lat}, {long} , {alt})")
         
-        #TODO: should be more efficient
+        distances = np.zeros(self.path_Nsteps-0)
+        
+        #TODO: should be more computetional efficient 
         for i, (x, y, z) in enumerate(self.path):
-            distance = math.sqrt((lat - x)**2 + (long - y)**2 + (alt - z)**2)
+            distance = spherical_law_of_cosines((lat,long,alt),(x,y,z))
             distances[i] = distance
             # # Plot line connecting point_A to each point on the path
             # ax.plot([lat, x], [long, y], [alt, z], linestyle='dashed', color='gray', alpha=0.5)
@@ -112,6 +114,7 @@ class FlightPath:
         # Find the index of the minimum distance
         min_distance = min(distances)
         min_distance_index = np.argmin(distances)
+        self.progress(f"ref_path: {self.path[min_distance_index]}")
 
         bad_step = min_distance_index < self.minimum_distance_index_prev
         return min_distance, bad_step
@@ -122,13 +125,6 @@ class FlightPath:
         real_lat, real_long, real_alt = real_path_endpoint
         distance = math.sqrt((real_lat - ref_lat)**2 + (real_long - ref_long)**2 + (ref_alt - real_alt)**2)
         return distance > 0.5
-
-    
-    def real_path_step(self,lat,long,alt):
-
-        point = (lat,long,alt)
-        self.real_path[self.real_path_i] = point
-        self.real_path_i += 1
 
     def print_path(self):
         for point in self.path:
@@ -169,4 +165,4 @@ class FlightPath:
 
 
     def progress(self,data):
-        print(f"PATH: {data}\n")
+        print(f"PATH: {data}")

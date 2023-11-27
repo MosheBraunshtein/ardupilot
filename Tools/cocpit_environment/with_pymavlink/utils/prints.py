@@ -36,7 +36,11 @@ def report_to_file(episode_N, angle_of_attack,total_penalty,steps,time):
         sys.stdout = sys.__stdout__  # Reset standard output to the console
 
         print(f"""{Fore.GREEN}
-    ╔════════════════════════╗
-    ║   episode {episode_N} reported to file       ║
-    ╚════════════════════════╝
+    ╔═════════════════════════════╗
+    ║   episode {episode_N} reported to file    ║
+    ╚═════════════════════════════╝
                 {Style.RESET_ALL}""")
+        
+
+def print_episode(episode_count):
+      print(f"{Fore.GREEN}EPISODE {episode_count} {Style.RESET_ALL}")

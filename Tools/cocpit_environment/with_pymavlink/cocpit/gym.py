@@ -12,12 +12,11 @@ class CopterGym(gymnasium.Env):
         # Define the action space (roll, pitch, yaw, throttle)
         self.action_space = gymnasium.spaces.Box(low=1000, high=2000, shape=(4,),dtype=np.float32)  # Example 4 actions for throttle, roll, pitch, and yaw
 
-        # Define the observation space (roll, pitch, yaw)
+        # Define the observation space (roll, pitch, yaw, )
         self.observation_space = gymnasium.spaces.Box(low=-90, high=90, shape=(3,))
 
         # Other environment-specific parameters
         self.max_steps = max_steps
-        self.isCrushed = False
         
 
     def step(self, action):
@@ -25,15 +24,6 @@ class CopterGym(gymnasium.Env):
         apply the action to the drone and simulate a step using ArduPilot SITL
 
         '''
-        print(f"Gym: step {self.current_step}")
-
-        # # Check if the episode is done
-        # done = self.current_step >= self.max_steps or self.isCrushed
-
-        # if done:
-        #     self.flight_path.save_real_path()
-        #     self.sitl_env.close()
-        #     return None,0,done
     
         # Example: action = [1500,1500,1500,1500]
         self.sitl_env.set_rc(action)
@@ -41,25 +31,29 @@ class CopterGym(gymnasium.Env):
         # Receive telemetry data from the drone
         (lat,long,alt) , attitude = self.sitl_env.get_gps_and_attitude()
 
-        distance_form_refPath,bad_step = self.flight_path.distance_realLocation_toPath(lat=lat,long=long,alt=alt)
+        distance_from_refPath,bad_step = self.flight_path.distance_realLocation_toPath(lat=lat,long=long,alt=alt)
 
-        penalty = self.compute_penalty(min_distance=distance_form_refPath,bad_step=bad_step)
-
-        self.progress(f"PENALTY = {penalty}")
-
+        penalty = self.compute_penalty(min_distance=distance_from_refPath,bad_step=bad_step)
 
         self.current_step += 1
-        self.isCrushed = alt < 0
+
+        # condition for done
+        self.isCrushed = alt < 2 
+        self.beyond_wall = alt > 101
+        self.end_episode = self.current_step >= self.max_steps
+
         # Check if the episode is done
-        done = self.current_step >= self.max_steps or self.isCrushed
+        done = self.end_episode or self.isCrushed or self.beyond_wall
 
         if done:
+            penalty += self.beyond_wall*300
             # give penalty if real_path.endpoint far from ref_path.endpoint
             penalty += 100*self.flight_path.endpoint_penalty(real_path_endpoint=(lat,long,alt))
-            self.progress(f"endpoint PENALTY = {penalty}")
+
             self.flight_path.save_real_path()
             self.sitl_env.close()
 
+        self.progress(f"PENALTY = -{penalty}\n")
 
         return attitude, penalty, done
 
@@ -73,13 +67,17 @@ class CopterGym(gymnasium.Env):
         initial_lat, initial_long, initial_alt, initial_heading = self.sitl_env.run()
 
         self.flight_path = None
+        self.isCrushed = False
+        self.beyond_wall = False
+        self.end_episode = False
 
-        self.angle_of_attack = random.randint(30,40)
-        
+        # self.angle_of_attack = random.randint(30,40)
+
+        self.angle_of_attack = 40
 
         self.progress(f"generate refernce trajectory for {self.angle_of_attack} deg")
 
-        self.flight_path = FlightPath(lat=initial_lat, long=initial_long, alt=initial_alt, heading=initial_heading, angle_of_attack=self.angle_of_attack,real_path_Nsteps=self.max_steps)
+        self.flight_path = FlightPath(lat=initial_lat, long=initial_long, alt=initial_alt, heading=initial_heading, angle_of_attack=self.angle_of_attack)
 
         self.current_step = 0
 
@@ -106,5 +104,8 @@ class CopterGym(gymnasium.Env):
 
         return penalty
 
+
+    def print_current_step(self):
+        print(f"step - {self.current_step}")
     def progress(self,data):
-        print(f"Gym:{data}\n")
+        print(f"Gym:{data}")

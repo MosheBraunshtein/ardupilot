@@ -25,23 +25,23 @@ from cocpit.gym import CopterGym
 from colorama import init, Fore, Style
 
 
-from utils.prints import cool_print , reminder_print , report_to_file
+from utils.prints import cool_print , reminder_print , report_to_file , print_episode  
 
 
 
 
-NUM_STEPS = 2048                    # Timesteps data to collect before updating
+NUM_STEPS = 100  # 2048                    # Timesteps data to collect before updating
 BATCH_SIZE = 64                     # Batch size of training data
 TOTAL_TIMESTEPS = NUM_STEPS * 10  # 500   # Total timesteps to run
 GAMMA = 0.99                        # Discount factor
 GAE_LAM = 0.95                      # For generalized advantage estimation
 NUM_EPOCHS = 10                     # Number of epochs to train
-REPORT_STEPS = 1000                 # Number of timesteps between reports
+REPORT_STEPS = 3                 # Number of timesteps between reports
 
 
 if __name__ == "__main__":
 
-    env = CopterGym(max_steps=500)
+    env = CopterGym(max_steps=150)
     obs_dim = env.observation_space.shape[0]
     action_dim = env.action_space.shape[0]
     lower_bound = env.action_space.low
@@ -83,14 +83,16 @@ if __name__ == "__main__":
 
     for t in range(TOTAL_TIMESTEPS):
 
-        if t % REPORT_STEPS == 0:
-            print(t, '/', TOTAL_TIMESTEPS)
+        
+        print(t, '/', TOTAL_TIMESTEPS)
 
         action_np, log_prob_np, values_np = policy.get_action(obs)
 
         roll, pitch, throttle, yaw = action_np
 
-        action_on_env = [roll,pitch,throttle,0]
+        action_on_env = [roll,pitch,throttle-200,0]
+
+        env.print_current_step()
 
         print(f"net : action = {action_on_env}")
 
@@ -108,6 +110,7 @@ if __name__ == "__main__":
         if done or (t + 1) % NUM_STEPS == 0:
             if done:
                 episode_count += 1
+                print_episode(episode_count)
 
             # Value of last time-step
             last_value = policy.get_values(obs)
@@ -118,87 +121,91 @@ if __name__ == "__main__":
                 gae_lam=GAE_LAM,
                 is_last_terminal=done,
                 last_v=last_value)
+
+            if (t + 1) % NUM_STEPS == 0:
+                print("in num_steps")
+                season_count += 1
+                # Update for epochs
+                for ep in range(NUM_EPOCHS):
+                    batch_data = buffer.get_mini_batch(BATCH_SIZE)
+                    num_grads = len(batch_data)
+
+                    print("num_grads = ",num_grads)
+
+                    # Iterate over minibatch of data
+                    for k in range(num_grads):
+                        (
+                            obs_batch,
+                            action_batch,
+                            log_prob_batch,
+                            advantage_batch,
+                            return_batch,
+                        ) = (
+                            batch_data[k]['obs'],
+                            batch_data[k]['action'],
+                            batch_data[k]['log_prob'],
+                            batch_data[k]['advantage'],
+                            batch_data[k]['return'],
+                        )
+
+                        # Normalize advantage
+                        advantage_batch = (
+                            advantage_batch -
+                            np.squeeze(np.mean(advantage_batch, axis=0))
+                        ) / (np.squeeze(np.std(advantage_batch, axis=0)) + 1e-8)
+
+                        # Convert to torch tensor
+                        (
+                            obs_batch,
+                            action_batch,
+                            log_prob_batch,
+                            advantage_batch,
+                            return_batch,
+                        ) = (
+                            torch.tensor(obs_batch, dtype=torch.float32),
+                            torch.tensor(action_batch, dtype=torch.float32),
+                            torch.tensor(log_prob_batch, dtype=torch.float32),
+                            torch.tensor(advantage_batch, dtype=torch.float32),
+                            torch.tensor(return_batch, dtype=torch.float32),
+                        )
+
+                        # Update the networks on minibatch of data
+                        (
+                            pi_loss,
+                            v_loss,
+                            total_loss,
+                            approx_kl,
+                            std,
+                        ) = policy.update(obs_batch, action_batch,
+                                        log_prob_batch, advantage_batch,
+                                        return_batch)
+
+                        pi_losses.append(pi_loss.numpy())
+                        v_losses.append(v_loss.numpy())
+                        total_losses.append(total_loss.numpy())
+                        approx_kls.append(approx_kl.numpy())
+                        stds.append(std.numpy())
+
+                buffer.clear()
+
+                mean_ep_penalty = episode_penalty / episode_count
+                episode_penalty, episode_count = 0.0, 0
+
+                mean_rewards.append(mean_ep_penalty)
+                pi_losses, v_losses, total_losses, approx_kls, stds = (
+                        [], [], [], [], [])
+                
             obs = env.reset()
 
-        if (t + 1) % NUM_STEPS == 0:
-            season_count += 1
-            # Update for epochs
-            for ep in range(NUM_EPOCHS):
-                batch_data = buffer.get_mini_batch(BATCH_SIZE)
-                num_grads = len(batch_data)
-
-                # Iterate over minibatch of data
-                for k in range(num_grads):
-                    (
-                        obs_batch,
-                        action_batch,
-                        log_prob_batch,
-                        advantage_batch,
-                        return_batch,
-                    ) = (
-                        batch_data[k]['obs'],
-                        batch_data[k]['action'],
-                        batch_data[k]['log_prob'],
-                        batch_data[k]['advantage'],
-                        batch_data[k]['return'],
-                    )
-
-                    # Normalize advantage
-                    advantage_batch = (
-                        advantage_batch -
-                        np.squeeze(np.mean(advantage_batch, axis=0))
-                    ) / (np.squeeze(np.std(advantage_batch, axis=0)) + 1e-8)
-
-                    # Convert to torch tensor
-                    (
-                        obs_batch,
-                        action_batch,
-                        log_prob_batch,
-                        advantage_batch,
-                        return_batch,
-                    ) = (
-                        torch.tensor(obs_batch, dtype=torch.float32),
-                        torch.tensor(action_batch, dtype=torch.float32),
-                        torch.tensor(log_prob_batch, dtype=torch.float32),
-                        torch.tensor(advantage_batch, dtype=torch.float32),
-                        torch.tensor(return_batch, dtype=torch.float32),
-                    )
-
-                    # Update the networks on minibatch of data
-                    (
-                        pi_loss,
-                        v_loss,
-                        total_loss,
-                        approx_kl,
-                        std,
-                    ) = policy.update(obs_batch, action_batch,
-                                      log_prob_batch, advantage_batch,
-                                      return_batch)
-
-                    pi_losses.append(pi_loss.numpy())
-                    v_losses.append(v_loss.numpy())
-                    total_losses.append(total_loss.numpy())
-                    approx_kls.append(approx_kl.numpy())
-                    stds.append(std.numpy())
-
-            buffer.clear()
-
-            mean_ep_penalty = episode_penalty / episode_count
-            episode_penalty, episode_count = 0.0, 0
-
-            mean_rewards.append(mean_ep_penalty)
-            pi_losses, v_losses, total_losses, approx_kls, stds = (
-                    [], [], [], [], [])
-
     # Save policy and value network
-    Path('saved_network').mkdir(parents=True, exist_ok=True)
-    torch.save(pi_network.state_dict(), 'saved_network/pi_network.pth')
-    torch.save(v_network.state_dict(), 'saved_network/v_network.pth')
+    Path('/ardupilot/Tools/cocpit_environment/with_pymavlink/saved_data/networks').mkdir(parents=True, exist_ok=True)
+    torch.save(pi_network.state_dict(), 'networks/pi_network.pth')
+    torch.save(v_network.state_dict(), 'networks/v_network.pth')
 
     # Plot episodic reward
-    _, ax = plt.subplots(1, 1, figsize=(5, 4), constrained_layout=True)
-    ax.plot(range(season_count), mean_rewards)
-    ax.set_xlabel("season")
-    ax.set_ylabel("episodic reward")
-    ax.grid(True)
-    plt.show()
+    # _, ax = plt.subplots(1, 1, figsize=(5, 4), constrained_layout=True)
+    # ax.plot(range(season_count), mean_rewards)
+    # ax.set_xlabel("season")
+    # ax.set_ylabel("episodic reward")
+    # ax.grid(True)
+    # plt.show()

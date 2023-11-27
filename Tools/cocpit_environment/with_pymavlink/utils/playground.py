@@ -1,3 +1,9 @@
+import torch
+from pathlib import Path  
+import sys
+sys.path.append("/ardupilot/Tools/cocpit_environment/with_pymavlink")
+
+
 import torch 
 from torch import nn
 import torch.nn.functional as F
@@ -35,72 +41,8 @@ class PI_Network(nn.Module):
         weghits = np.random.uniform(-0.05, 0.05, size=self.fc1.weight.shape)
         self.fc1.weight.data = torch.tensor(weghits, dtype=torch.float32)
 
+pi_network = PI_Network(3,4,100,200)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-############################################################
-
-                #checking diferent initial wheights
-
-# pi_net = PI_Network(1,1,1000,2000)
-
-# # weights = pi_net.fc1.weight
-
-# # print(weights)
-
-# obs = torch.tensor([1],dtype=torch.float32)
-
-# with torch.no_grad():
-#     out = pi_net(obs)
-
-
-# print(out)
-
-############################################################
-
-                # see net dict
-
-# pi_network = PI_Network(obs_dim=2, action_dim=4, lower_bound=1, upper_bound=100)
-
-
-# with torch.no_grad():
-#     obs = (100,1)
-
-#     obs_torch = torch.tensor(obs,dtype=torch.float32)
-
-#     # obs_torch = torch.unsqueeze(torch.tensor(obs, dtype=torch.float32), 0)
-
-#     action = pi_network(obs_torch)
-
-#     dict = pi_network.state_dict()
-
-#     keys = [key for key in dict]
-
-#     fc1_bias = pi_network[0].bias
-
-#     print(fc1_bias)
+Path('saved_network').mkdir(parents=True, exist_ok=True)
+torch.save(pi_network.state_dict(), 'saved_network/pi_network.pth')
+# torch.save(v_network.state_dict(), 'saved_network/v_network.pth')

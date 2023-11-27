@@ -23,20 +23,32 @@ with open(file_realPath, 'rb') as file:
 
 real_latitudes, real_longitudes, real_altitudes = zip(*real_path)
 # Plotting the trajectory
-ax.plot3D(real_longitudes, real_latitudes, real_altitudes, label='Real Path', linestyle='-', color='blue', alpha=0.7)
+ax.plot3D(real_longitudes, real_latitudes, real_altitudes, label='Real Path', linestyle='dotted', color='blue', alpha=0.7)
+# Add start and endpoint markers for real path
+ax.scatter3D(real_longitudes[0], real_latitudes[0], real_altitudes[0], marker='o', color='green', label='Real Path Start')
+ax.scatter3D(real_longitudes[-1], real_latitudes[-1], real_altitudes[-1], marker='x', color='green', label='Real Path End')
+
+# Add text annotations for real path coordinates
+ax.text(real_longitudes[0], real_latitudes[0], real_altitudes[0], f'({real_longitudes[0]:.2f}, {real_latitudes[0]:.2f}, {real_altitudes[0]:.2f})', color='green')
+ax.text(real_longitudes[-1], real_latitudes[-1], real_altitudes[-1], f'({real_longitudes[-1]:.2f}, {real_latitudes[-1]:.2f}, {real_altitudes[-1]:.2f})', color='green')
 
 
 # Load ref path from the file
+
 file_refPath = os.path.join(with_pymavlink,'saved_data\\ref_path\\path_{}.pkl'.format(args.angle))
 with open(file_refPath, 'rb') as file:
-    ref_path = pickle.load(file)
+    ref_path = pickle.load(file)\
 
 ref_latitudes, ref_longitudes, ref_altitudes = zip(*ref_path)
-# Plotting the trajectory
-ax.plot3D(ref_longitudes, ref_latitudes, ref_altitudes, label='Reference Path', linestyle='-', color='red', alpha=0.7)
+ax.plot3D(ref_longitudes, ref_latitudes, ref_altitudes, label='Reference Path', linestyle='dotted', color='red', alpha=0.7)
 
+# Add start and endpoint markers for reference path
+ax.scatter3D(ref_longitudes[0], ref_latitudes[0], ref_altitudes[0], marker='o', color='orange', label='Ref Path Start')
+ax.scatter3D(ref_longitudes[-1], ref_latitudes[-1], ref_altitudes[-1], marker='x', color='orange', label='Ref Path End')
 
-
+# Add text annotations for reference path coordinates
+ax.text(ref_longitudes[0], ref_latitudes[0], ref_altitudes[0], f'({ref_longitudes[0]:.2f}, {ref_latitudes[0]:.2f}, {ref_altitudes[0]:.2f})', color='orange')
+ax.text(ref_longitudes[-1], ref_latitudes[-1], ref_altitudes[-1], f'({ref_longitudes[-1]:.2f}, {ref_latitudes[-1]:.2f}, {ref_altitudes[-1]:.2f})', color='orange')
 
 # Adding labels
 ax.set_xlabel('Longitude')

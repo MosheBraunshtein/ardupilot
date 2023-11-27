@@ -1,6 +1,7 @@
 import torch
 from torch import nn
 from torch.distributions import Normal
+from colorama import init, Fore, Style
 
 
 class PPOPolicy(nn.Module):
@@ -40,6 +41,7 @@ class PPOPolicy(nn.Module):
                                           lr=self.learning_rate)
 
     def forward(self, obs):
+        
         pi_out = self.pi_network(obs)
 
         # Add Normal distribution layer at the output of pi_network
@@ -60,8 +62,11 @@ class PPOPolicy(nn.Module):
 
         action = dist.sample()
 
+        # dist.log_prob takes the sampled value (action) and return the log probability , the action is contain 4 values so the torch.sum summing them
+        # the log increase small difrences
         log_prob = torch.sum(dist.log_prob(action), dim=1)
 
+        # log_prob is the value which will help us to teach the net
         return (action[0].detach().numpy(),
                 torch.squeeze(log_prob).detach().numpy(),
                 torch.squeeze(values).detach().numpy())
@@ -93,6 +98,8 @@ class PPOPolicy(nn.Module):
         """
         Performs one step gradient update of policy and value network.
         """
+
+        print(f"{Fore.GREEN} update process {Style.RESET_ALL}")
 
         new_log_prob, values = self.evaluate_action(
                 obs_batch, action_batch, training=True)
