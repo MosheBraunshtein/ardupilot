@@ -43,6 +43,7 @@ class PI_Network(nn.Module):
 
 pi_network = PI_Network(3,4,100,200)
 
-Path('saved_network').mkdir(parents=True, exist_ok=True)
-torch.save(pi_network.state_dict(), 'saved_network/pi_network.pth')
+directory_path = Path('/ardupilot/Tools/cocpit_environment/with_pymavlink/saved_data/networks/')
+# directory_path.mkdir(parents=True,exist_ok=True)
+torch.save(pi_network.state_dict(), directory_path / 'pi_network.pth')
 # torch.save(v_network.state_dict(), 'saved_network/v_network.pth')

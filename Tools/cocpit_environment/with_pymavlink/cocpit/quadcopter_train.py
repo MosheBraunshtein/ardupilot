@@ -32,7 +32,7 @@ from utils.prints import cool_print , reminder_print , report_to_file , print_ep
 
 NUM_STEPS = 100  # 2048                    # Timesteps data to collect before updating
 BATCH_SIZE = 64                     # Batch size of training data
-TOTAL_TIMESTEPS = NUM_STEPS * 10  # 500   # Total timesteps to run
+TOTAL_TIMESTEPS = NUM_STEPS * 2  # 500   # Total timesteps to run
 GAMMA = 0.99                        # Discount factor
 GAE_LAM = 0.95                      # For generalized advantage estimation
 NUM_EPOCHS = 10                     # Number of epochs to train
@@ -40,6 +40,9 @@ REPORT_STEPS = 3                 # Number of timesteps between reports
 
 
 if __name__ == "__main__":
+    """
+    Using reinforcement learning, you can train a network to directly map state to actuator commands.
+    """
 
     env = CopterGym(max_steps=150)
     obs_dim = env.observation_space.shape[0]
@@ -90,7 +93,7 @@ if __name__ == "__main__":
 
         roll, pitch, throttle, yaw = action_np
 
-        action_on_env = [roll,pitch,throttle-200,0]
+        action_on_env = [roll,pitch,throttle,0]
 
         env.print_current_step()
 
@@ -188,19 +191,17 @@ if __name__ == "__main__":
 
                 buffer.clear()
 
-                mean_ep_penalty = episode_penalty / episode_count
-                episode_penalty, episode_count = 0.0, 0
+                episode_penalty= 0.0
 
-                mean_rewards.append(mean_ep_penalty)
                 pi_losses, v_losses, total_losses, approx_kls, stds = (
                         [], [], [], [], [])
                 
             obs = env.reset()
 
     # Save policy and value network
-    Path('/ardupilot/Tools/cocpit_environment/with_pymavlink/saved_data/networks').mkdir(parents=True, exist_ok=True)
-    torch.save(pi_network.state_dict(), 'networks/pi_network.pth')
-    torch.save(v_network.state_dict(), 'networks/v_network.pth')
+    directory_path = Path('/ardupilot/Tools/cocpit_environment/with_pymavlink/saved_data/networks').mkdir(parents=True, exist_ok=True)
+    torch.save(pi_network.state_dict(), directory_path / 'pi_network.pth')
+    torch.save(v_network.state_dict(), directory_path / 'v_network.pth')
 
     # Plot episodic reward
     # _, ax = plt.subplots(1, 1, figsize=(5, 4), constrained_layout=True)

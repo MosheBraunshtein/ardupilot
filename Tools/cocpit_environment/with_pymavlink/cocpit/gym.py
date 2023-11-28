@@ -17,6 +17,8 @@ class CopterGym(gymnasium.Env):
 
         # Other environment-specific parameters
         self.max_steps = max_steps
+
+        self.sitl_env = None
         
 
     def step(self, action):
@@ -49,9 +51,7 @@ class CopterGym(gymnasium.Env):
             penalty += self.beyond_wall*300
             # give penalty if real_path.endpoint far from ref_path.endpoint
             penalty += 100*self.flight_path.endpoint_penalty(real_path_endpoint=(lat,long,alt))
-
             self.flight_path.save_real_path()
-            self.sitl_env.close()
 
         self.progress(f"PENALTY = -{penalty}\n")
 
@@ -61,15 +61,18 @@ class CopterGym(gymnasium.Env):
         '''
         start new episode
         '''
-        # Initialize the ArduPilot SITL connection
-        self.sitl_env = Sitl()
-
-        initial_lat, initial_long, initial_alt, initial_heading = self.sitl_env.run()
+        # insure sitl is not running
+        self.sitl_env.close() if self.sitl_env is not None else None
 
         self.flight_path = None
         self.isCrushed = False
         self.beyond_wall = False
         self.end_episode = False
+
+        # Initialize the ArduPilot SITL connection
+        self.sitl_env = Sitl()
+
+        initial_lat, initial_long, initial_alt, initial_heading = self.sitl_env.run()
 
         # self.angle_of_attack = random.randint(30,40)
 
