@@ -158,8 +158,8 @@ class FlightPath:
             pickle.dump(self.path, file)
         self.progress(f"save path_{self.angle_of_attack}.pkl")
         
-    def save_real_path(self):
-        with open(f'/ardupilot/Tools/cocpit_environment/with_pymavlink/saved_data/real_path/real_path_{self.angle_of_attack}.pkl', 'wb') as file:
+    def save_real_path(self,episode):
+        with open(f'/ardupilot/Tools/cocpit_environment/with_pymavlink/saved_data/real_path/real_path_{self.angle_of_attack}_episode_{episode}.pkl', 'wb') as file:
             pickle.dump(self.real_path, file)
         self.progress(f"save real_path_{self.angle_of_attack}.pkl")
 

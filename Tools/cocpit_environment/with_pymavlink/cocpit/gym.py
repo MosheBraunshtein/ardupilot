@@ -3,6 +3,7 @@ import numpy as np
 from physical_env import Sitl
 import random
 from flight_path import FlightPath
+from utils.prints import print_episode, report_to_file 
 
 
 class CopterGym(gymnasium.Env):
@@ -13,7 +14,7 @@ class CopterGym(gymnasium.Env):
         self.action_space = gymnasium.spaces.Box(low=1000, high=2000, shape=(4,),dtype=np.float32)  # Example 4 actions for throttle, roll, pitch, and yaw
 
         # Define the observation space (roll, pitch, yaw, )
-        self.observation_space = gymnasium.spaces.Box(low=-90, high=90, shape=(3,))
+        self.observation_space = gymnasium.spaces.Box(low=-90, high=90, shape=(6,))
 
         # Other environment-specific parameters
         self.max_steps = max_steps
@@ -48,10 +49,9 @@ class CopterGym(gymnasium.Env):
         done = self.end_episode or self.isCrushed or self.beyond_wall
 
         if done:
-            penalty += self.beyond_wall*300
+            penalty += self.beyond_wall*10
             # give penalty if real_path.endpoint far from ref_path.endpoint
-            penalty += 100*self.flight_path.endpoint_penalty(real_path_endpoint=(lat,long,alt))
-            self.flight_path.save_real_path()
+            penalty += 10*self.flight_path.endpoint_penalty(real_path_endpoint=(lat,long,alt))
 
         self.progress(f"PENALTY = -{penalty}\n")
 
@@ -107,6 +107,11 @@ class CopterGym(gymnasium.Env):
 
         return penalty
 
+
+    def save_episode_path(self,episode,total_penalty):
+        self.flight_path.save_real_path(episode=episode)
+        print_episode(episode_count=episode)
+        report_to_file(episode_N=episode,total_penalty=total_penalty,steps=self.current_step)
 
     def print_current_step(self):
         print(f"step - {self.current_step}")

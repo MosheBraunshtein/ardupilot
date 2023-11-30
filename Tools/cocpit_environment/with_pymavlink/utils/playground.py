@@ -41,6 +41,8 @@ class PI_Network(nn.Module):
         weghits = np.random.uniform(-0.05, 0.05, size=self.fc1.weight.shape)
         self.fc1.weight.data = torch.tensor(weghits, dtype=torch.float32)
 
+
+
 pi_network = PI_Network(3,4,100,200)
 
 directory_path = Path('/ardupilot/Tools/cocpit_environment/with_pymavlink/saved_data/networks/')

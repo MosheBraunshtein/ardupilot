@@ -21,7 +21,7 @@ def reminder_print():
             - vehicle parameters
         """)
 
-def report_to_file(episode_N, angle_of_attack,total_penalty,steps,time):    
+def report_to_file(episode_N, total_penalty,steps,time=0,angle_of_attack=40):    
     filename = "/ardupilot/Tools/cocpit_environment/with_pymavlink/saved_data/reports/output.txt"
     with open(filename, "a") as file:
         sys.stdout = file  # Redirect standard output to the file

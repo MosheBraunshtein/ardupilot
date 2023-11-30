@@ -89,7 +89,7 @@ class Custom_mav():
                 heading = pos_msg.hdg / 100
                 # self.progress(f"GLOBAL_POSITION_INT : lat={lat}, long={long}, heading={heading}")
                 break
-        return lat,long,alt
+        return lat,long,alt,heading
 
     def get_attitude(self):
 
@@ -116,9 +116,13 @@ class Custom_mav():
                 roll = math.degrees(atti_msg.roll) 
                 pitch = math.degrees(atti_msg.pitch)
                 yaw = math.degrees(atti_msg.yaw)
+                roll_speed = atti_msg.rollspeed
+                pitch_speed = atti_msg.pitchspeed
+                yaw_speed = atti_msg.yawspeed
+
                 break 
 
-        return (roll,pitch,yaw)  
+        return (roll,pitch,yaw,roll_speed,pitch_speed,yaw_speed)  
 
 
     def takeoff_to100(self):

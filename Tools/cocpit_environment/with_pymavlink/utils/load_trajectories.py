@@ -5,7 +5,7 @@ import os
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument("-angle",help="specify angle for trajectory")
+parser.add_argument("-ep",help="specify angle for trajectory")
 args = parser.parse_args()
 
 # Creating a 3D plot
@@ -17,7 +17,7 @@ with_pymavlink = os.path.dirname(utils_path)
 
 # Load real path from the file
 
-file_realPath = os.path.join(with_pymavlink,'saved_data\\real_path\\real_path_{}.pkl'.format(args.angle))
+file_realPath = os.path.join(with_pymavlink,'saved_data\\real_path\\real_path_40_episode_{}.pkl'.format(args.ep))
 with open(file_realPath, 'rb') as file:
     real_path = pickle.load(file)
 
@@ -35,7 +35,7 @@ ax.text(real_longitudes[-1], real_latitudes[-1], real_altitudes[-1], f'({real_lo
 
 # Load ref path from the file
 
-file_refPath = os.path.join(with_pymavlink,'saved_data\\ref_path\\path_{}.pkl'.format(args.angle))
+file_refPath = os.path.join(with_pymavlink,'saved_data\\ref_path\\path_40.pkl')
 with open(file_refPath, 'rb') as file:
     ref_path = pickle.load(file)\
 
@@ -67,6 +67,6 @@ ax.set_ylim([min(min(real_latitudes), min(ref_latitudes)), max(max(real_latitude
 ax.set_zlim([min(min(real_altitudes), min(ref_altitudes)), max(max(real_altitudes), max(ref_altitudes))])
 
 # Add a title
-plt.title(f'Trajectory Plot - Angle {args.angle}')
+plt.title(f'Trajectory Plot - Angle 40')
 
 plt.show()

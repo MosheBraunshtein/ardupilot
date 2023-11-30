@@ -30,9 +30,9 @@ from utils.prints import cool_print , reminder_print , report_to_file , print_ep
 
 
 
-NUM_STEPS = 100  # 2048                    # Timesteps data to collect before updating
+NUM_STEPS = 2048                    # Timesteps data to collect before updating
 BATCH_SIZE = 64                     # Batch size of training data
-TOTAL_TIMESTEPS = NUM_STEPS * 2  # 500   # Total timesteps to run
+TOTAL_TIMESTEPS = NUM_STEPS * 10  # 500   # Total timesteps to run
 GAMMA = 0.99                        # Discount factor
 GAE_LAM = 0.95                      # For generalized advantage estimation
 NUM_EPOCHS = 10                     # Number of epochs to train
@@ -113,7 +113,7 @@ if __name__ == "__main__":
         if done or (t + 1) % NUM_STEPS == 0:
             if done:
                 episode_count += 1
-                print_episode(episode_count)
+                env.save_episode_path(episode=episode_count,total_penalty=episode_penalty)
 
             # Value of last time-step
             last_value = policy.get_values(obs)
@@ -191,15 +191,15 @@ if __name__ == "__main__":
 
                 buffer.clear()
 
-                episode_penalty= 0.0
+            episode_penalty= 0.0
 
-                pi_losses, v_losses, total_losses, approx_kls, stds = (
-                        [], [], [], [], [])
+            pi_losses, v_losses, total_losses, approx_kls, stds = (
+                    [], [], [], [], [])
                 
             obs = env.reset()
 
     # Save policy and value network
-    directory_path = Path('/ardupilot/Tools/cocpit_environment/with_pymavlink/saved_data/networks').mkdir(parents=True, exist_ok=True)
+    directory_path = Path('/ardupilot/Tools/cocpit_environment/with_pymavlink/saved_data/networks/')
     torch.save(pi_network.state_dict(), directory_path / 'pi_network.pth')
     torch.save(v_network.state_dict(), directory_path / 'v_network.pth')
 

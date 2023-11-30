@@ -52,6 +52,9 @@ if __name__ == "__main__":
 
         cool_print()
         reminder_print()
+        
+        pretrained_state_dict = torch.load('saved_network/pi_network.pth')
+        pi_net.load_state_dict(pretrained_state_dict)
 
         start = time.time()
         attitude = env.reset()
