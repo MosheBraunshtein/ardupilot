@@ -1,13 +1,19 @@
+#!/usr/bin/python3
+
 import gymnasium as gym
 import numpy as np
-from cocpit.physical_env import Sitl
+from physical_env import Sitl
 from collections import namedtuple, deque
 from gymnasium import Wrapper
-from rewards import compute_next_ref_point, compute_reward
+from utils.gps_distansce_calc import compute_next_ref_gps
+import sys
+
+# sys.path.append("/ardupilot/Tools/cocpit_environment/with_pymavlink")
 
 Pose = namedtuple('Initial_pose',['lat','long','alt','heading'])
 Quadcopter_state = namedtuple('Quadcopter_state',['roll','pitch','yaw','roll_speed','pitch_speed','yaw_speed'])
 
+#TODO: check max_steps truncate implementation
 class CopterGym(gym.Env):
 
     def __init__(self,max_steps=100) -> None:
@@ -33,12 +39,10 @@ class CopterGym(gym.Env):
             }
         )
 
-
-    def _get_obs(self):
-        pass
+        self.max_steps = max_steps
         
 
-    def step(self, action) -> (Quadcopter_state,int,bool,Pose):
+    def step(self, action):
         '''
         apply the action to the drone and simulate a step using ArduPilot SITL
 
@@ -50,20 +54,32 @@ class CopterGym(gym.Env):
         
         # Receive telemetry data from the drone
         gps , attitude = self.sitl_env.get_gps_and_attitude()
-        self.real_pose = Pose(lat=gps[0],long=gps[1],alt=gps[2],heading=gps[3])
-        self.observation = Quadcopter_state(roll=attitude[0],pitch=attitude[1],yaw=attitude[2],roll_speed=attitude[3],pitch_speed=attitude[4],yaw_speed=attitude[5])
+        real_pose = Pose(lat=gps[0],long=gps[1],alt=gps[2],heading=gps[3])
+        observation = Quadcopter_state(roll=attitude[0],pitch=attitude[1],yaw=attitude[2],roll_speed=attitude[3],pitch_speed=attitude[4],yaw_speed=attitude[5])
+
+        # generate new ref_point, update paths 
+        ref_gps = compute_next_ref_gps(last_ref_pose=self.ref_path[-1])
+        ref_pose = Pose(lat=ref_gps[0],long=ref_gps[1],alt=ref_gps[2],heading=None)
+        self.real_path.append(real_pose)
+        self.ref_path.append(ref_pose)
 
         # condition for done
-        self.isCrushed = self.real_pose.alt < 2 
-        self.beyond_wall = self.real_pose.alt > 101
+        self.isCrushed = real_pose.alt < 2 
+        self.beyond_wall = real_pose.alt > 101
 
         # Check if the episode is done
-        done = self.isCrushed or self.beyond_wall
+        terminated = self.isCrushed or self.beyond_wall
 
-        if done:
-            self.reward = -self.beyond_wall*10
+        reward = -10 if terminated else 0
 
-        return self.observation, self.reward, done, self.real_pose
+        info = {
+            "ref_point" : ref_pose,
+            "real_pose" : real_pose
+        }
+
+        self.render()
+
+        return observation, reward, terminated, False, info
 
     def reset(self) -> (Pose, Quadcopter_state):
         '''
@@ -73,19 +89,22 @@ class CopterGym(gym.Env):
         # Initialize the ArduPilot SITL connection
         self.sitl_env = Sitl()
 
-        gps = self.sitl_env.run()
-        self.real_pose = Pose(lat=gps[0],long=gps[1],alt=gps[2],heading=gps[3])
+        self.sitl_env.run()
+
+        # initialize paths for computes reward
+        self.real_path = deque(maxlen=self.max_steps)
+        self.ref_path = deque(maxlen=self.max_steps)
 
         # get sensor data effected by the action
-        _ , attitude = self.sitl_env.get_gps_and_attitude()
-        self.observation = Quadcopter_state(roll=attitude[0],pitch=attitude[1],yaw=attitude[2],roll_speed=attitude[3],pitch_speed=attitude[4],yaw_speed=attitude[5])
+        gps , attitude = self.sitl_env.get_gps_and_attitude()
+        pose = Pose(lat=gps[0],long=gps[1],alt=gps[2],heading=gps[3])
+        initial_observation = Quadcopter_state(roll=attitude[0],pitch=attitude[1],yaw=attitude[2],roll_speed=attitude[3],pitch_speed=attitude[4],yaw_speed=attitude[5])
 
+        self.real_path.append(pose)
+        self.ref_path.append(pose)
 
-        initial_pose = self.real_pose
-        initial_observation = self.observation
-        self.reward = 0
-
-        return initial_pose,initial_observation
+        info = None
+        return initial_observation, info
     
 
     def render(self,action,observation,reward):
@@ -106,70 +125,34 @@ class CopterGym(gym.Env):
         print("="*60)
     
 
+    def save_paths(self):
+        pass
+
     def close(self):
         '''
         close sitl process
         '''
+        self.save_paths()
         self.sitl_env.close()
 
 
 
-class RewardCopterGym(CopterGym):
-    """
-    compute reward.
-    - needs to generate predicted_path
-    - contain real_path 
-    - distance(real_path-predicted_path)
-    """
-    def __init__(self, max_steps=100, additional_param=None) -> None:
-        super(RewardCopterGym, self).__init__(max_steps)
-        self.real_path = deque(maxlen=max_steps)
-        self.ref_path = deque(maxlen=max_steps)
-
-    def step(self, action):
-        # Call the base class's step method to perform the default behavior
-        observation, reward, done, real_pose = super().step(action)
-        
-        next_ref_point = Pose()
-
-        last_ref_point = self.ref_path[-1]
-        next_ref_point.lat, next_ref_point.long, next_ref_point.alt = compute_next_ref_point(last_ref_point)
-
-        self.ref_path.append((next_ref_point.lat.lat,next_ref_point.long,next_ref_point.alt))
-        self.real_path.append((real_pose.lat,real_pose.long,real_pose.alt))
-
-        reward = compute_reward(real_pose,last_ref_point)
-
-        # isCrushed = None
-        # isOverCeil = None
-
-        # done = done or isCrushed or isOverCeil
-
-
-        super().render(action=action,observation=observation,reward=reward)
-
-        return observation, reward, done, real_pose
-
-    def reset(self):
-        initial_pose,initial_obs = super().reset()
-        self.ref_path.append((initial_pose.lat,initial_pose.long,initial_pose.alt))
-        self.real_path.append((initial_pose.lat,initial_pose.long,initial_pose.alt))
-        return initial_pose,initial_obs
 
 
 
 
- 
-base_env = RewardCopterGym()
 
-pose,state = base_env.reset()
-print(state)
-itter = 0
-while True:
-    copter_state,reward,done,pose = base_env.step([1500,1500,1000,1500])
-    if done:
-        print("episode end")
-        break
+base_env = CopterGym()
+action = base_env.observation_space.sample()
+p = action['pitch']
+print(p)
+# print(state)
+# itter = 0
+# while True:
+#     copter_state,reward,done,pose = base_env.step([1500,1500,1000,1500])
+#     if done:
+#         print("episode end")
+#         break
 
 
 
