@@ -11,7 +11,8 @@ class CopterGym(gymnasium.Env):
         super(CopterGym, self).__init__()
         
         # Define the action space (roll, pitch, yaw, throttle)
-        self.action_space = gymnasium.spaces.Box(low=1000, high=2000, shape=(4,),dtype=np.float32)  # Example 4 actions for throttle, roll, pitch, and yaw
+        #TODO: rescale action
+        self.action_space = gymnasium.spaces.Box(low=-1, high=1, shape=(4,),dtype=np.float32)  # Example 4 actions for throttle, roll, pitch, and yaw
 
         # Define the observation space (roll, pitch, yaw, )
         self.observation_space = gymnasium.spaces.Box(low=-90, high=90, shape=(6,))

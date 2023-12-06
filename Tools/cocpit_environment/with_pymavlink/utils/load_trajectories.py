@@ -17,7 +17,7 @@ with_pymavlink = os.path.dirname(utils_path)
 
 # Load real path from the file
 
-file_realPath = os.path.join(with_pymavlink,'saved_data\\real_path\\real_path_40_episode_{}.pkl'.format(args.ep))
+file_realPath = os.path.join(with_pymavlink,'saved_data\\real_path\\path_40deg.pkl')
 with open(file_realPath, 'rb') as file:
     real_path = pickle.load(file)
 
@@ -35,9 +35,9 @@ ax.text(real_longitudes[-1], real_latitudes[-1], real_altitudes[-1], f'({real_lo
 
 # Load ref path from the file
 
-file_refPath = os.path.join(with_pymavlink,'saved_data\\ref_path\\path_40.pkl')
+file_refPath = os.path.join(with_pymavlink,'saved_data\\ref_path\\path_40deg.pkl')
 with open(file_refPath, 'rb') as file:
-    ref_path = pickle.load(file)\
+    ref_path = pickle.load(file)
 
 ref_latitudes, ref_longitudes, ref_altitudes = zip(*ref_path)
 ax.plot3D(ref_longitudes, ref_latitudes, ref_altitudes, label='Reference Path', linestyle='dotted', color='red', alpha=0.7)

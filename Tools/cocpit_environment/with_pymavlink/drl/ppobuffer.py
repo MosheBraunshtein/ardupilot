@@ -27,7 +27,7 @@ def compute_return_advantage(
         else:
             next_non_terminal = 1
             next_values = values[k+1]
-
+        # REWARD // VALUES IS NOT PROPORTIONAL
         delta = (rewards[k] +
                  gamma * next_non_terminal * next_values -
                  values[k])

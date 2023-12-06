@@ -27,7 +27,7 @@ class PI_Network(nn.Module):
         x = F.tanh(self.fc1(obs))
         x = F.tanh(self.fc2(x))
         action = self.fc3(x)
-        action = ((action + 1) * (self.upper_bound-self.lower_bound) / 2 +self.lower_bound)
+        action = ((action + 1) * (self.upper_bound-self.lower_bound) / 2 + self.lower_bound)
         return action
     
 
